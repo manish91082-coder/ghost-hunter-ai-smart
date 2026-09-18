@@ -128,3 +128,36 @@ def test_token_metadata_string_decoder():
     adapter = make_adapter()
     assert adapter._decode_string(encode_string("USDC")) == "USDC"
     assert adapter._decode_string("0x") is None
+
+
+@pytest.mark.asyncio
+async def test_factory_reconciliation_must_match_event_pool():
+    token0, token1, pool = "0x"+"1"*40, "0x"+"2"*40, "0x"+"3"*40
+    other = "0x"+"4"*40
+    adapter = make_adapter()
+    candidate = adapter.decode_log("v2", {
+        "address": V2_FACTORY,
+        "topics": [EVENTS["v2_pair_created"].topic0, topic(token0), topic(token1)],
+        "data": "0x"+word(pool)+f"{1:064x}",
+        "blockNumber": "0x10",
+    })
+    adapter.rpc.values[("eth_call", V2_FACTORY, "0xe6a43905"+word(token0)[2:]+word(token1)[2:])] = "0x"+word(pool)
+    assert (await adapter.reconcile_candidate(candidate)).pool == pool
+    adapter.rpc.values[("eth_call", V2_FACTORY, "0xe6a43905"+word(token0)[2:]+word(token1)[2:])] = "0x"+word(other)
+    with pytest.raises(ValueError, match="reconciliation mismatch"):
+        await adapter.reconcile_candidate(candidate)
+
+
+def test_discovery_is_idempotent_after_pool_is_cached():
+    adapter = make_adapter()
+    token0, token1, pool = "0x"+"1"*40, "0x"+"2"*40, "0x"+"3"*40
+    candidate = adapter.decode_log("v2", {
+        "address": V2_FACTORY,
+        "topics": [EVENTS["v2_pair_created"].topic0, topic(token0), topic(token1)],
+        "data": "0x"+word(pool)+f"{1:064x}",
+        "blockNumber": "0x10",
+    })
+    assert not adapter.already_discovered(candidate)
+    adapter.cache.pools[pool] = object()
+    assert adapter.already_discovered(candidate)
+    assert len(adapter.candidate_key(candidate)) == 4
