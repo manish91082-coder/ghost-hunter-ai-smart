@@ -30,19 +30,21 @@ class PolygonChain:
             base_fee=int(raw["baseFeePerGas"], 16) if raw.get("baseFeePerGas") else None,
             observed_at_ns=time.time_ns(),
         )
-        self.previous = state
         return state
 
-    async def measure_interval(self, current: BlockState) -> float | None:
-        if self.previous is None:
+    def commit_observation(self, state: BlockState) -> float | None:
+        previous = self.previous
+        self.previous = state
+        if previous is None:
             return None
-        return max(0.0, current.timestamp - self.previous.timestamp)
+        return max(0.0, state.timestamp - previous.timestamp)
 
-    async def head_poll(self, interval_seconds: float = 0.25) -> AsyncIterator[BlockState]:
-        last = None
+    async def head_poll(self, interval_seconds: float = 0.20) -> AsyncIterator[BlockState]:
+        last_number: int | None = None
         while True:
             block = await self.latest_block()
-            if block.number != last:
-                last = block.number
+            if block.number != last_number:
+                last_number = block.number
+                self.commit_observation(block)
                 yield block
             await asyncio.sleep(interval_seconds)
