@@ -37,3 +37,9 @@ def test_wss_fleet_retains_all_endpoints():
     providers[0].record(False, 100.0)
     assert providers[0].state == "cooldown"
     assert len(fleet.providers) == 2
+
+
+def test_wss_health_is_based_on_subscription_confirmation():
+    provider = WSSProvider("wss-a", "ws://a")
+    fleet = PolygonWSS([provider])
+    assert fleet.providers[0].available
