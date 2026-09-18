@@ -168,6 +168,12 @@ class DiscoveryStore:
         self._db.commit()
         return cur.rowcount
 
+    def canonical_block_hash(self, number: int) -> str | None:
+        row = self._db.execute(
+            "SELECT hash FROM blocks WHERE number=? AND canonical=1", (number,)
+        ).fetchone()
+        return row["hash"] if row else None
+
     def get(self, candidate_key: str) -> DiscoveryRecord | None:
         row = self._db.execute(
             """
