@@ -1,7 +1,7 @@
 # PROJECT STATUS
 
 ## STATUS
-**PHASE 0 COMPLETE + CONCEPTUAL FOUNDATION COMPLETE; P1 DATA-PLANE IMPLEMENTATION IS NEXT**
+**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE SKELETON IMPLEMENTED; P1 DISCOVERY RUNTIME IS NEXT**
 
 ## Repository
 - `manish91082-coder/ghost-hunter-ai-smart`
@@ -11,99 +11,71 @@
 - Legacy repositories: MUST NOT BE MODIFIED
 
 ## Zero-Cost Constraint
-**ZERO-COST-FIRST IS FROZEN.** Core project development and shadow-mode operation must use local/open-source/free-tier resources wherever technically possible. No paid provider is a mandatory dependency. Provider abstraction, quota tracking, fallback and circuit breakers are required. See `ZERO_COST_ARCHITECTURE.md`.
+**ZERO-COST-FIRST IS FROZEN.** No paid service is a mandatory dependency. Local/open-source/free-tier resources are the development and shadow-mode baseline.
 
 ## Current Goal
-Create a dynamic, AI-assisted, deterministic-verifier-controlled Polygon PoS flash-loan arbitrage system that:
-- discovers relevant pools/pairs/venues dynamically
-- explores a large permutation/combination strategy space
+Build a dynamic Polygon PoS flash-loan arbitrage system that:
+- discovers liquidity dynamically
+- explores broad strategy permutations/combinations
 - calculates exact amount-dependent economics
-- optimizes trade size
-- rejects stale/unsafe/reverting candidates before submission
-- uses private submission where required and verified
-- accepts only expected verified net profit > $0.20 after all known costs
+- reacts immediately to new state
+- uses parallel/batched computation
+- proves candidates before submission
+- enforces expected verified net profit > $0.20
 - independently proves realized PnL
 
-## Reality Constraints
-1. Theoretical spread is not realized profit.
-2. A reverted transaction may still consume gas.
-3. Therefore literal zero post-submission gas loss cannot be guaranteed.
-4. The system must prevent avoidable loss by simulation, hard limits, atomic invariants and conservative authorization.
-5. The $0.20 threshold is a hard eligibility policy, not a profit guarantee.
-6. User-reported $5-$6 POL is constrained validation capital, not development budget.
+## Completed
+### Conceptual foundation
+- [x] Master system concept
+- [x] Mathematical engine specification
+- [x] Strategy search-space/permutation model
+- [x] Profitability and execution invariants
+- [x] Zero-cost architecture
 
-## Completed Conceptual Foundation
-- [x] Mission and system boundary frozen.
-- [x] Dynamic market model frozen.
-- [x] Deterministic mathematical authority frozen.
-- [x] AI/search role separated from execution authority.
-- [x] Strategy family catalog created.
-- [x] Large permutation/combination search-space model created.
-- [x] Amount optimization concept defined.
-- [x] Exact AMM math requirements defined.
-- [x] Full cost stack and $0.20 gate defined.
-- [x] Robust-profit/sensitivity concept defined.
-- [x] State freshness and candidate invalidation rules defined.
-- [x] Simulation and adversarial security invariants defined.
-- [x] Route integrity, wallet, nonce and approval invariants defined.
-- [x] Realized PnL reconciliation defined.
-- [x] Zero-cost-first architecture frozen.
-- [x] Durable memory/status protocol established.
+### P1 data-plane skeleton
+- [x] Async multi-RPC provider abstraction
+- [x] RPC health/failover and cooldown
+- [x] Batch JSON-RPC support
+- [x] Multi-provider quorum read primitive
+- [x] Polygon chain-id validation
+- [x] Dynamic block-head polling
+- [x] Low-latency WSS new-head stream
+- [x] Normalized block/token/pool/evidence models
+- [x] Local state cache
+- [x] Affected-pool lookup
+- [x] Venue adapter boundary
+- [x] Async parallel-read entry point
+- [x] Zero-cost GitHub CI test workflow
+- [x] src-layout package/build configuration
 
-## New Durable Artifacts
-- `CONCEPTUAL_MASTER_PLAN.md`
-- `MATHEMATICAL_ENGINE_SPEC.md`
-- `STRATEGY_SEARCH_SPACE.md`
-- `PROFITABILITY_EXECUTION_INVARIANTS.md`
+## Important Design Correction
+WSS/polling is an acceleration path, not canonical truth. A new-head event must trigger immediate downstream work, while execution-critical state is re-read/reconciled before authorization.
 
-## Conceptual Architecture
-**DISCOVER -> NORMALIZE -> LIQUIDITY GRAPH -> SIGNALS -> ROUTE/AMOUNT SEARCH -> EXACT MATH -> FULL ECONOMICS -> SIMULATE -> ADVERSARIAL CHECK -> PROFIT GATE -> AUTHORIZE -> PRIVATE/SAFE SUBMIT -> RECEIPT -> REALIZED PnL -> LEARN**
+The system must target low-latency reaction and parallelism, but must not promise a fixed sub-second execution time because provider latency, chain state and network conditions are dynamic.
 
-Authority:
-**AI proposes -> deterministic verifier decides -> security policy authorizes -> executor executes -> independent auditor proves.**
+## P1 Runtime Architecture
+**NEW HEAD -> FAST INVALIDATION -> CHANGED LOGS -> AFFECTED POOLS -> AFFECTED TOKENS -> AFFECTED ROUTES -> CHEAP PREFILTER -> EXACT QUOTES**
 
-## Strategy Search Model
-The search space varies across:
-- starting/flash asset
-- venue/pool
-- pool type
-- token direction
-- fee tier
-- hop count
-- route ordering
-- cycle length
-- amount
-- amount split
-- stable/non-stable paths
-- concentrated-liquidity state
-- gas state
-- submission method
-- state freshness
-- historical execution profile
+The next implementation adds actual protocol adapters and event-driven pool discovery.
 
-Because exhaustive enumeration is too expensive, the engine uses a staged funnel:
-**structural filter -> conservative upper bound -> exact quote -> amount optimization -> full economics -> simulation -> adversarial security -> authorization.**
+## Current Files Added/Changed
+- `pyproject.toml`
+- `.env.example`
+- `src/ghost_hunter/__init__.py`
+- `src/ghost_hunter/data_plane/__init__.py`
+- `src/ghost_hunter/data_plane/models.py`
+- `src/ghost_hunter/data_plane/rpc.py`
+- `src/ghost_hunter/data_plane/chain.py`
+- `src/ghost_hunter/data_plane/cache.py`
+- `src/ghost_hunter/data_plane/discovery.py`
+- `src/ghost_hunter/data_plane/orchestrator.py`
+- `src/ghost_hunter/data_plane/wss.py`
+- `tests/test_data_plane.py`
+- `.github/workflows/data-plane-ci.yml`
+- `README.md`
 
-## Mathematical Baseline
-Supported math families are designed around:
-- V2 constant-product
-- V3/Algebra concentrated liquidity
-- StableSwap
-- weighted/composable pools
-
-Execution-critical calculations use integer base units and must reproduce on-chain rounding behavior. Floating-point arithmetic is not authoritative.
-
-## Hard Profitability Invariants
-A candidate cannot reach transaction construction if:
-- ExpectedNetUSD <= 0.20
-- any material cost is unknown
-- required state is stale
-- exact simulation fails
-- route/token/pool integrity fails
-- wallet/gas limits fail
-- required private submission is unavailable
-- token behavior is unresolved
-- security policy fails
+## Safety
+Live execution remains disabled in this phase. No transaction signer/executor has been introduced.
 
 ## Phase Plan
 ### P0 — Governance/Foundation
@@ -111,90 +83,65 @@ A candidate cannot reach transaction construction if:
 
 ### P0.5 — Conceptual Master Foundation
 **COMPLETE**
-- system model
-- mathematical model
-- strategy search space
-- execution invariants
 
 ### P1 — Polygon Data Plane
-**NEXT**
-- multi-RPC/WSS abstraction
-- block listener
-- pool/event indexer
-- token registry
-- venue registry
-- state cache
-- reorg/finality handling
-- provider health/quota/fallback logic
+**IN PROGRESS**
+Next:
+- real venue/factory adapters
+- event topic registry
+- log scanner with adaptive ranges
+- pool creation discovery
+- token metadata/code-hash discovery
+- pool state readers
+- reorg handling
+- persistent local store
+- discovery reconciliation
 
 ### P2 — Exact Economics
 - V2 math
 - V3/Algebra math
-- Curve/StableSwap math
+- StableSwap
 - Balancer/weighted math
-- fee engine
-- gas engine
-- flash-loan repayment engine
-- net-profit gate
-- sensitivity/robustness engine
+- fee/gas/flash-loan engine
+- amount optimization
+- robustness analysis
 
 ### P3 — Strategy Engine
 - route graph
-- cycle detection
-- amount optimization
-- candidate ranking
-- deduplication
+- cycle enumeration
+- permutation/combination search
+- candidate deduplication
+- amount/split optimization
 - adaptive search
 
 ### P4 — Simulation/Security
-- eth_call
-- trace/fork testing
-- adversarial state changes
-- token behavior tests
-- executor invariant tests
+- fork/eth_call/trace
+- adversarial checks
+- executor invariants
 
 ### P5 — Execution
-- transaction builder
+- atomic executor
 - private submission
 - nonce manager
-- gas policy
-- atomic executor
+- wallet guardian
 - kill switch
 
 ### P6 — Shadow/Paper
-- live discovery
-- zero live capital
-- predicted vs simulated vs observed comparison
-
 ### P7 — Controlled Live
-Only after evidence-based acceptance criteria.
-
 ### P8+ — Autonomous Optimization
-Continuous AC tuning, regression and strategy expansion.
-
-## Current Next Action
-**P1: implement the dynamic Polygon data-plane skeleton.**
-First build the provider abstraction, chain clock/block listener, normalized state models, venue/pool discovery interfaces, and evidence records. Do not start live execution.
 
 ## Project Log
+### 2026-09-19 — P1 Data-Plane Skeleton
+- Implemented async multi-provider RPC with batching and failover.
+- Added quorum read primitive for critical consistency checks.
+- Added dynamic block polling and WSS new-head acceleration.
+- Added normalized state models, cache and venue discovery boundary.
+- Added CI and package configuration.
+- Corrected block interval observation so prior block state is retained.
+- Kept live execution out of the data plane.
+
 ### 2026-09-19 — Conceptual Master Foundation
-- Added `CONCEPTUAL_MASTER_PLAN.md`.
-- Added `MATHEMATICAL_ENGINE_SPEC.md`.
-- Added `STRATEGY_SEARCH_SPACE.md`.
-- Added `PROFITABILITY_EXECUTION_INVARIANTS.md`.
-- Formalized the permutation/combination search problem.
-- Formalized exact amount optimization.
-- Formalized mathematical and execution invariants.
-- Kept AI below deterministic safety/economic authority.
-- Preserved zero-cost-first constraint.
-
-### 2026-09-19 — Zero-Cost Policy
-- ZERO-COST-FIRST frozen as a hard project constraint.
-
-### 2026-09-19 — Repository Foundation
-- New public repository verified.
-- Legacy repositories isolated.
-- Durable memory/status/spec architecture established.
+- Frozen the dynamic market graph, exact math, search-space and execution-invariant architecture.
 
 ## Last Updated
 2026-09-19 | Asia/Kolkata (IST)
