@@ -330,3 +330,14 @@ Next:
 - Final verification evidence: GitHub Actions `data-plane-ci` run **#87** on commit `c6fe593cb79f00a732e2b6869f19c39bfb21d3c9` completed **SUCCESS**; pytest reported **44 tests, 0 failures, 0 errors, 0 skipped**.
 - Live execution remains disabled.
 - Next gate: integrate scanner -> canonical coordinator -> verified QuickSwap adapter -> quorum reconciliation -> exact-block pool/token state reads -> durable evidence persistence -> cache as one end-to-end adaptive event-processing path, then re-audit reorg/replay behavior.
+
+
+## 2026-09-19 — 🔒 GitHub State Verification Gate LOCKED
+- **NON-NEGOTIABLE RULE:** after every repository change, verify the live GitHub state before starting the next project step.
+- Required sequence: `CHANGE -> PUSH -> GITHUB STATE CHECK -> CI TERMINAL RESULT -> FAILURE FORENSICS IF NEEDED -> GREEN GATE -> NEXT CHANGE`.
+- Verification must use the exact promoted commit SHA and its corresponding GitHub Actions run/check.
+- `queued` / `in_progress` means **NOT VERIFIED** and blocks progression.
+- Any non-success terminal result blocks progression until diagnosed, repaired, and revalidated.
+- Screenshots, previous green runs, commit existence, or local reasoning are never substitutes for the current-commit GitHub verification.
+- Canonical rule file: `GITHUB_STATE_VERIFICATION_GATE.md`.
+- Current gate status at time of lock: commit `49c3b41d491a87aaa4258ec10729ea92a5eb9f76`, Actions run #90 = **queued**, therefore **NOT YET VERIFIED**. No next implementation gate is to be promoted until run #90 reaches a successful terminal state.
