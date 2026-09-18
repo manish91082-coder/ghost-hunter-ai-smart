@@ -43,3 +43,13 @@ def test_wss_health_is_based_on_subscription_confirmation():
     provider = WSSProvider("wss-a", "ws://a")
     fleet = PolygonWSS([provider])
     assert fleet.providers[0].available
+
+
+def test_quickswap_polygon_deployments_are_source_verified():
+    from ghost_hunter.data_plane.protocols import verified_deployments
+
+    deployments = verified_deployments(137)
+    assert {d.pool_type for d in deployments} == {"v2", "algebra_v3"}
+    assert all(d.source_verified for d in deployments)
+    assert all(d.chain_id == 137 for d in deployments)
+    assert len({d.factory.lower() for d in deployments}) == 2
