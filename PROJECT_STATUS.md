@@ -66,6 +66,8 @@ Build a dynamic Polygon PoS flash-loan arbitrage system that:
 - [x] Verified event-topic registry boundary
 - [x] Reorg/canonical-head guard
 - [x] Discovery runtime design and tests
+- [x] Source-verified QuickSwap Polygon V2 + Algebra V3 deployment manifest
+- [x] Deployment manifest regression tests
 
 ## Important Design Correction
 WSS/polling is an acceleration path, not canonical truth. A new-head event must trigger immediate downstream work, while execution-critical state is re-read/reconciled before authorization.
@@ -162,6 +164,13 @@ Next:
 ### P6 — Shadow/Paper
 ### P7 — Controlled Live
 ### P8+ — Autonomous Optimization
+
+## 2026-09-19 — Verified Venue Deployment Manifest
+- Researched official QuickSwap Polygon deployment documentation.
+- Added source-verified deployment anchors for QuickSwap V2 factory and Polygon Algebra V3 factory.
+- Kept pool discovery dynamic: no static pair/pool inventory was introduced.
+- Added regression tests for chain ID, source verification and distinct factory identities.
+- Important: deployment address verification is not the same as runtime contract-code/interface verification; that remains the next adapter gate.
 
 ## Project Log
 ### 2026-09-19 — Autonomous RPC Fleet Policy
