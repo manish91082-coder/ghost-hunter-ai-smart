@@ -53,3 +53,32 @@ def test_quickswap_polygon_deployments_are_source_verified():
     assert all(d.source_verified for d in deployments)
     assert all(d.chain_id == 137 for d in deployments)
     assert len({d.factory.lower() for d in deployments}) == 2
+
+
+from ghost_hunter.data_plane.reorg import CanonicalCoordinator, CanonicalHead, ReorgGuard
+from ghost_hunter.data_plane.store import DiscoveryStore
+
+
+def test_reorg_guard_does_not_advance_on_discontinuity():
+    g = ReorgGuard()
+    assert g.accept(CanonicalHead(10, "h10", "h9"))
+    assert not g.accept(CanonicalHead(11, "fork11", "wrong"))
+    assert g.head.number == 10
+
+
+def test_coordinator_rewinds_on_fork_and_replays():
+    with DiscoveryStore() as store:
+        c = CanonicalCoordinator(store, overlap=3)
+        assert c.observe(CanonicalHead(10, "h10", "h9")) == (True, None)
+        assert c.observe(CanonicalHead(11, "fork11", "wrong")) == (False, 8)
+        assert store.canonical_records() == []
+        assert c.record_replayed_block(CanonicalHead(10, "fork10", "h9"))
+        assert c.record_replayed_block(CanonicalHead(11, "fork11", "fork10"))
+
+
+def test_same_head_is_idempotent():
+    with DiscoveryStore() as store:
+        c = CanonicalCoordinator(store)
+        head = CanonicalHead(10, "h10", "h9")
+        assert c.observe(head) == (True, None)
+        assert c.observe(head) == (True, None)
