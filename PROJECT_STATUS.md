@@ -13,6 +13,9 @@
 ## Zero-Cost Constraint
 **ZERO-COST-FIRST IS FROZEN.** No paid service is a mandatory dependency. Local/open-source/free-tier resources are the development and shadow-mode baseline.
 
+## RPC Fleet Rule
+**AUTONOMOUS MULTI-RPC FLEET IS NOW FROZEN.** Keep many RPC/WSS endpoints in a persistent registry; never auto-delete an endpoint merely for failure/block/rate-limit/latency. Dynamically rotate, cooldown, quarantine, probe and restore endpoints without routine manual switching. Critical reads require provider-diverse reconciliation. See `RPC_FLEET_POLICY.md`.
+
 ## Current Goal
 Build a dynamic Polygon PoS flash-loan arbitrage system that:
 - discovers liquidity dynamically
@@ -35,6 +38,7 @@ Build a dynamic Polygon PoS flash-loan arbitrage system that:
 ### P1 data-plane skeleton
 - [x] Async multi-RPC provider abstraction
 - [x] RPC health/failover and cooldown
+- [x] Autonomous multi-RPC fleet governance policy frozen
 - [x] Batch JSON-RPC support
 - [x] Multi-provider quorum read primitive
 - [x] Polygon chain-id validation
@@ -146,6 +150,12 @@ Next:
 ### P8+ — Autonomous Optimization
 
 ## Project Log
+### 2026-09-19 — Autonomous RPC Fleet Policy
+- Frozen many-RPC/many-WSS architecture with automatic rotation and provider-diverse quorum.
+- RPCs are retained when unhealthy; runtime uses cooldown/quarantine/probation and automatic recovery probes instead of deletion.
+- Routine provider switching is explicitly no-manual-work.
+- Next RPC implementation upgrade: capability-aware health scoring, block-lag/rate-limit detection, background recovery probes and WSS fleet rotation.
+
 ### 2026-09-19 — P1 Discovery Runtime
 - Added adaptive log scanning with range shrink/expand.
 - Added verified event-topic registry boundary so guessed topics cannot become execution truth.
