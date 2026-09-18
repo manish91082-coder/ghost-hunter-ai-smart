@@ -116,3 +116,15 @@ async def test_pool_factory_mismatch_rejected():
     adapter.rpc.values[("eth_call", pool, "0x0902f1ac")] = "0x"+"0"*192
     with pytest.raises(ValueError, match="factory mismatch"):
         await adapter.read_pool_state(candidate)
+
+
+def encode_string(value):
+    raw = value.encode()
+    padded = raw + b"\x00" * ((32 - len(raw) % 32) % 32)
+    return "0x" + (32).to_bytes(32, "big").hex() + len(raw).to_bytes(32, "big").hex() + padded.hex()
+
+
+def test_token_metadata_string_decoder():
+    adapter = make_adapter()
+    assert adapter._decode_string(encode_string("USDC")) == "USDC"
+    assert adapter._decode_string("0x") is None
