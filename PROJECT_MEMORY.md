@@ -231,3 +231,11 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - Failure is fail-closed: wrong chain, empty code or interface failure returns unverified evidence.
 - Corrected the Algebra V3 factory event signature to `Pool(address,address,address)` based on official QuickSwap documentation.
 - Topic0 activation remains blocked until canonical Ethereum Keccak-256 verification is available. No guessed hash was inserted.
+
+
+## 2026-09-19 Canonical Event Topic Sync
+- Activated QuickSwap V2 `PairCreated(address,address,address,uint256)` topic0: `0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9`.
+- Activated QuickSwap Algebra `Pool(address,address,address)` topic0: `0x91ccaa7a278130b65168c3a0c8d3bcae84cf5e43704342bd3ec0b59e59c036db`.
+- Topic values were corroborated from actual Polygon factory transaction logs, while official QuickSwap documentation confirms the event signatures and deployment addresses.
+- Added `pool_events.py` with fail-closed ABI-word decoders for both events.
+- Static pool inventories remain forbidden; only factory-emitted runtime discoveries may create pool candidates.
