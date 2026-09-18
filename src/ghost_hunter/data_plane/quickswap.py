@@ -24,7 +24,7 @@ NAME_SELECTOR = "0x06fdde03"
 TOTAL_SUPPLY_SELECTOR = "0x18160ddd"
 RESERVES_SELECTOR = "0x0902f1ac"
 POOL_BY_PAIR_SELECTOR = "0xd9a641e1"
-GLOBAL_STATE_SELECTOR = "0x6e9960c3"
+GLOBAL_STATE_SELECTOR = "0xe76c01e4"
 
 
 @dataclass(frozen=True)
@@ -119,11 +119,6 @@ class QuickSwapAdapter:
     async def _read(self, address: str, selector: str, extra: str = "") -> str:
         return _hex(await self.rpc.call("eth_call", [{"to": address, "data": selector + extra}, "latest"]))
 
-    async def _code_present(self, address: str) -> bool:
-        return bool(_hex(await self.rpc.call("eth_getCode", [address, "latest"]))) and len(
-            await self.rpc.call("eth_getCode", [address, "latest"])
-        ) > 2
-
     async def _token_state(self, address: str, block_number: int) -> TokenState:
         code = await self.rpc.call("eth_getCode", [address, hex(block_number)])
         if not isinstance(code, str) or len(code) <= 2:
@@ -131,8 +126,6 @@ class QuickSwapAdapter:
         decimals = _uint(await self.rpc.call("eth_call", [{"to": address, "data": DECIMALS_SELECTOR}, hex(block_number)]))
         if decimals > 255:
             raise ValueError("token decimals out of bounds")
-        def optional_text(selector: str) -> str | None:
-            return None
         symbol = None
         name = None
         total_supply = None
