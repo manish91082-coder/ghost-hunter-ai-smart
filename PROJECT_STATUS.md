@@ -234,3 +234,13 @@ Next:
 - Canonical topic0 values are still intentionally not activated. The event registry remains fail-closed until a canonical Keccak-256 topic is independently verified.
 - Web research confirmed QuickSwap's Polygon V2 factory and Algebra V3 factory addresses and the Algebra `Pool` event/read-only factory interface. 
 - Local/CI regression validation is the next promotion gate; no live execution is enabled.
+
+
+## 2026-09-19 — Canonical QuickSwap Event Topic + Decoder Gate
+- Canonical QuickSwap Polygon V2 `PairCreated` topic0 was independently corroborated from PolygonScan factory logs: `0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9`.
+- Canonical QuickSwap Polygon Algebra `Pool` topic0 was independently corroborated from PolygonScan factory logs: `0x91ccaa7a278130b65168c3a0c8d3bcae84cf5e43704342bd3ec0b59e59c036db`.
+- Activated only these two verified topics in the event registry.
+- Added fail-closed decoders for QuickSwap V2 `PairCreated` and Algebra `Pool`.
+- Decoder tests cover exact topic length, indexed-address decoding, pool address decoding, V2 creation index and malformed-log rejection.
+- Pool discovery remains runtime-driven. No static pool inventory was introduced.
+- Next gate: wire the verified topics/decoders into the adaptive log scanner and add canonical-emitter filtering plus direct pool/token state reads.
