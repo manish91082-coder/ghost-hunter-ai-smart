@@ -306,3 +306,12 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - QuickSwap factory `getPair/poolByPair` reconciliation now uses provider-diverse quorum in production.
 - Final green evidence: run #87, commit `c6fe593cb79f00a732e2b6869f19c39bfb21d3c9`, **44 pytest tests passed, 0 failed, 0 errors, 0 skipped**.
 - Next execution gate is end-to-end adaptive event processing with exact-block provider-diverse pool/token reads and durable evidence persistence.
+
+
+## 2026-09-19 — 🔒 GitHub State Verification Gate LOCKED
+- The project now has a permanent non-negotiable rule: **every repository change must be followed by live GitHub state verification before the next implementation step begins**.
+- Verification must target the exact promoted `main` commit SHA and its corresponding GitHub Actions run.
+- Queued/in-progress is not verified. Any non-success terminal result blocks progression until repaired and revalidated.
+- Screenshots, previous green runs, commit existence, or local reasoning cannot substitute for current-commit GitHub verification.
+- Canonical rule file: `GITHUB_STATE_VERIFICATION_GATE.md`.
+- Gate lock itself was validated: run #90 for the rule-file commit completed successfully; run #91 for the status-file commit also completed successfully.
