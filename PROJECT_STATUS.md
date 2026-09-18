@@ -353,3 +353,11 @@ Next:
 - Final verified baseline for this gate: commit `a97dce1f907c6bac7b043931763392c8114bf745`, GitHub Actions run #99 **SUCCESS**.
 - Live execution remains disabled.
 - Next gate: wire this canonical QuickSwap processing path into head/reorg orchestration with explicit replay context, then test restart/reorg replay end-to-end.
+
+
+## 2026-09-19 — Head/Reorg Context Integration
+- Added HeadContext and DataPlane.run_heads_context() so canonical acceptance and replay decisions are explicitly propagated to the processing layer.
+- Preserved the existing run_heads(handler) API for compatibility.
+- Added regression coverage proving a canonical head produces no replay request while a discontinuity propagates the coordinator's replay start.
+- Verification: implementation commit 232af68fda87d360dd22be28fad3572ef8278dd1 passed Actions run #102; regression commit faf1bdcdf49a3abc31021162d6ed7993a3a7f2b0 passed Actions run #103.
+- Next gate remains durable restart/reorg replay execution, including reconstructing canonical state from the SQLite store and replaying replacement blocks before promotion.
