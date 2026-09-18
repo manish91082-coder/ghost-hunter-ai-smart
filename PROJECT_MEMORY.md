@@ -326,3 +326,10 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - Verified implementation baseline: `a97dce1f907c6bac7b043931763392c8114bf745`, Actions run #99 **SUCCESS**.
 - Status documentation commit `92a12a45c7df8c4be70d86b5c271d75596a63c73` was independently verified by Actions run #100 **SUCCESS**.
 - Next gate: connect canonical QuickSwap processing to head/reorg orchestration with explicit replay context and end-to-end restart/reorg replay tests.
+
+
+## 2026-09-19 — Head/Reorg Context Integration
+- HeadContext and DataPlane.run_heads_context() now propagate canonical/replay decisions explicitly while preserving the legacy run_heads handler API.
+- Regression commit faf1bdcdf49a3abc31021162d6ed7993a3a7f2b0 passed Actions run #103.
+- Status update commit 2221d698e8cdc762da9b4b90fed27e8870536a40 passed Actions run #104.
+- Next gate: durable restart/reorg replay execution and canonical-state reconstruction from SQLite before discovery promotion.
