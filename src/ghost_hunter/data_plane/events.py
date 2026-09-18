@@ -20,7 +20,7 @@ EVENTS = {
     ),
     "v3_pool_created": EventTopic(
         "PoolCreated",
-        "PoolCreated(address,address,uint24,int24,address)",
+        "Pool(address,address,address)",
         "",
     ),
     "balancer_pool_registered": EventTopic(
