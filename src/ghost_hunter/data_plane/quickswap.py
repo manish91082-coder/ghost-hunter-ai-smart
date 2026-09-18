@@ -119,6 +119,25 @@ class QuickSwapAdapter:
     async def _read(self, address: str, selector: str, extra: str = "") -> str:
         return _hex(await self.rpc.call("eth_call", [{"to": address, "data": selector + extra}, "latest"]))
 
+    @staticmethod
+    def _decode_string(raw: str) -> str | None:
+        try:
+            data = bytes.fromhex(_hex(raw)[2:])
+            if len(data) >= 64:
+                offset = int.from_bytes(data[:32], "big")
+                if offset + 32 <= len(data):
+                    length = int.from_bytes(data[offset:offset + 32], "big")
+                    start = offset + 32
+                    end = start + length
+                    if end <= len(data):
+                        return data[start:end].decode("utf-8", errors="strict")
+            if len(data) >= 32:
+                length = int.from_bytes(data[:32], "big")
+                if 32 + length <= len(data):
+                    return data[32:32 + length].decode("utf-8", errors="strict")
+        except (ValueError, UnicodeDecodeError):
+            return None
+        return None
     async def _token_state(self, address: str, block_number: int) -> TokenState:
         code = await self.rpc.call("eth_getCode", [address, hex(block_number)])
         if not isinstance(code, str) or len(code) <= 2:
@@ -130,13 +149,13 @@ class QuickSwapAdapter:
         name = None
         total_supply = None
         try:
-            symbol = _hex(
+            symbol = self._decode_string(
                 await self.rpc.call("eth_call", [{"to": address, "data": SYMBOL_SELECTOR}, hex(block_number)])
             )
         except Exception:
             pass
         try:
-            name = _hex(
+            name = self._decode_string(
                 await self.rpc.call("eth_call", [{"to": address, "data": NAME_SELECTOR}, hex(block_number)])
             )
         except Exception:
@@ -147,11 +166,11 @@ class QuickSwapAdapter:
             )
         except Exception:
             pass
-        state = {"name_raw": name, "symbol_raw": symbol, "total_supply": total_supply}
+        state = {"name": name, "symbol": symbol, "total_supply": total_supply}
         token = TokenState(
             address=address.lower(),
             decimals=decimals,
-            symbol=None,
+            symbol=symbol,
             code_hash=StateCache.digest(code),
             block_number=block_number,
             source="quickswap_direct",
