@@ -296,3 +296,13 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - Critical factory reconciliation is routed through provider-diverse quorum in the production MultiRPC implementation; lack of diversity fails closed.
 - DataPlane accepts a configurable SQLite store path for restart persistence.
 - Next: integrate persistence into the actual adaptive event-processing path and expand verified venue adapters only after deployment/ABI/runtime evidence gates.
+
+
+## 2026-09-19 — CI Forensic Recovery
+- Live Actions history was verified for `main`; recent red `data-plane-ci` runs were genuine pytest failures.
+- CI now persists a JUnit pytest artifact on every run, including failures, enabling evidence-driven forensic debugging.
+- Restored the accidentally truncated QuickSwap adapter regression suite, aligned the reorg test with the current `rescan_start()` API, canonicalized persisted pool addresses, and corrected replay payload error semantics.
+- Corrected the Algebra event registry key to the verified ABI event name `Pool`.
+- QuickSwap factory `getPair/poolByPair` reconciliation now uses provider-diverse quorum in production.
+- Final green evidence: run #87, commit `c6fe593cb79f00a732e2b6869f19c39bfb21d3c9`, **44 pytest tests passed, 0 failed, 0 errors, 0 skipped**.
+- Next execution gate is end-to-end adaptive event processing with exact-block provider-diverse pool/token reads and durable evidence persistence.
