@@ -21,9 +21,9 @@ class DataPlane:
     canonical: CanonicalCoordinator
 
     @classmethod
-    def build(cls, rpc: MultiRPC) -> "DataPlane":
+    def build(cls, rpc: MultiRPC, store_path: str = ":memory:") -> "DataPlane":
         cache = StateCache()
-        store = DiscoveryStore()
+        store = DiscoveryStore(store_path)
         return cls(rpc, PolygonChain(rpc), cache, DiscoveryEngine(cache), store, CanonicalCoordinator(store))
 
     async def bootstrap(self) -> int:
