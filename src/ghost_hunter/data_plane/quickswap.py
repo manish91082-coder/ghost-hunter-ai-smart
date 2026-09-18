@@ -232,6 +232,17 @@ class QuickSwapAdapter:
         self.cache.put_pool(pool_state)
         return pool_state
 
+    def candidate_key(self, candidate: DiscoveryCandidate) -> tuple[str, str, str, int]:
+        return (candidate.created.venue, candidate.created.pool_type, candidate.created.pool.lower(), candidate.block_number)
+
+    def already_discovered(self, candidate: DiscoveryCandidate) -> bool:
+        return candidate.created.pool.lower() in self.cache.pools
+
+    async def reconcile_candidate(self, candidate: DiscoveryCandidate) -> PoolCreated:
+        factory_pool = await self.reconcile_pool_by_pair(candidate.created.pool_type, candidate.created.token0, candidate.created.token1, candidate.block_number)
+        if factory_pool.lower() != candidate.created.pool.lower():
+            raise ValueError("factory reconciliation mismatch")
+        return candidate.created
     async def reconcile_pool_by_pair(self, pool_type: str, token0: str, token1: str, block_number: int) -> str:
         deployment = self.deployment(pool_type)
         if pool_type == "v2":
