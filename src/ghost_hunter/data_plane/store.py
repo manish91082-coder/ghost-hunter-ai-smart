@@ -21,6 +21,9 @@ class DiscoveryRecord:
     payload_hash: str
     status: str = "canonical"
 
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "pool_address", self.pool_address.lower())
+
 
 class DiscoveryStore:
     """Zero-cost durable discovery/evidence store backed by SQLite.
