@@ -12,10 +12,18 @@ def test_cache_affected_pools():
     assert len(cache.affected_pools({"0xa"})) == 1
 
 
-def test_provider_round_robin_order():
-    rpc = MultiRPC([RPCProvider("a", "http://a"), RPCProvider("b", "http://b")])
-    assert [p.name for p in rpc._ordered()] == ["a", "b"]
-    assert [p.name for p in rpc._ordered()] == ["a", "b"]
+def test_provider_order_is_score_driven():
+    slow = RPCProvider("slow", "http://slow", ewma_latency_ms=500)
+    fast = RPCProvider("fast", "http://fast", ewma_latency_ms=50)
+    rpc = MultiRPC([slow, fast])
+    assert [p.name for p in rpc._ordered()] == ["fast", "slow"]
+
+
+def test_capability_filter_is_dynamic():
+    generic = RPCProvider("generic", "http://generic")
+    trace = RPCProvider("trace", "http://trace", capabilities={"trace"})
+    rpc = MultiRPC([generic, trace])
+    assert [p.name for p in rpc._ordered("trace")] == ["generic", "trace"]
 
 
 def test_failed_provider_is_retained_and_cooled_down():
@@ -31,6 +39,16 @@ def test_rate_limited_provider_is_retained():
     provider.record(False, 100.0, error_kind="rate_limit")
     assert provider.state == "cooldown"
     assert provider.url == "http://a"
+
+
+def test_stale_provider_is_quarantined_but_retained():
+    provider = RPCProvider("lagging", "https://rpc.example/?api_key=SECRET")
+    for _ in range(3):
+        provider.observe_block(100, 103, max_lag_blocks=2)
+    assert provider.state == "quarantined"
+    registry = MultiRPC([provider]).retained_registry()[0]
+    assert "SECRET" not in registry["url"]
+    assert "api_key" not in registry["url"]
 
 
 @pytest.mark.asyncio
