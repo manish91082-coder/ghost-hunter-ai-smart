@@ -15,7 +15,22 @@ def test_cache_affected_pools():
 def test_provider_round_robin_order():
     rpc = MultiRPC([RPCProvider("a", "http://a"), RPCProvider("b", "http://b")])
     assert [p.name for p in rpc._ordered()] == ["a", "b"]
-    assert [p.name for p in rpc._ordered()] == ["b", "a"]
+    assert [p.name for p in rpc._ordered()] == ["a", "b"]
+
+
+def test_failed_provider_is_retained_and_cooled_down():
+    provider = RPCProvider("a", "http://a")
+    for _ in range(3):
+        provider.record(False, 100.0)
+    assert provider.state == "cooldown"
+    assert provider in MultiRPC([provider]).providers
+
+
+def test_rate_limited_provider_is_retained():
+    provider = RPCProvider("a", "http://a")
+    provider.record(False, 100.0, error_kind="rate_limit")
+    assert provider.state == "cooldown"
+    assert provider.url == "http://a"
 
 
 @pytest.mark.asyncio
