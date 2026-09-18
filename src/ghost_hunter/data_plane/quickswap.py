@@ -269,3 +269,48 @@ class QuickSwapAdapter:
         key = ":".join(map(str, self.candidate_key(candidate)))
         record = DiscoveryRecord(candidate_key=key, venue=candidate.created.venue, pool_type=candidate.created.pool_type, pool_address=candidate.created.pool.lower(), block_number=candidate.block_number, block_hash=candidate.block_hash, transaction_hash=candidate.transaction_hash, log_index=candidate.log_index, payload_hash=store.payload_hash(payload))
         return store.record_discovery(record, payload)
+
+    async def process_block(self, scanner: Any, store: DiscoveryStore, block_number: int) -> int:
+        """Promote only fully verified QuickSwap discoveries from one canonical block."""
+        processed = 0
+        from .scanner import LogQuery
+        for pool_type in ("v2", "algebra_v3"):
+            query = self.log_query(pool_type, block_number, block_number)
+            logs = await scanner.scan(LogQuery(query["address"], query["topics"], block_number, block_number))
+            for log in logs:
+                try:
+                    candidate = self.decode_log(pool_type, log)
+                    if candidate.block_number != block_number or not candidate.block_hash:
+                        continue
+                    if store.canonical_block_hash(block_number) != candidate.block_hash:
+                        continue
+                    await self.reconcile_candidate(candidate)
+                    pool_state = await self.read_pool_state(candidate, promote_cache=False)
+                    token0 = await self._token_state(candidate.created.token0, block_number, promote_cache=False)
+                    token1 = await self._token_state(candidate.created.token1, block_number, promote_cache=False)
+                    payload = {
+                        "event": {
+                            "venue": candidate.created.venue,
+                            "pool_type": candidate.created.pool_type,
+                            "factory": candidate.created.factory,
+                            "token0": candidate.created.token0,
+                            "token1": candidate.created.token1,
+                            "pool": candidate.created.pool,
+                            "creation_index": candidate.created.creation_index,
+                            "block_number": candidate.block_number,
+                            "block_hash": candidate.block_hash,
+                            "transaction_hash": candidate.transaction_hash,
+                            "log_index": candidate.log_index,
+                        },
+                        "pool_state_hash": pool_state.state_hash,
+                        "token0_code_hash": token0.code_hash,
+                        "token1_code_hash": token1.code_hash,
+                    }
+                    self.persist_candidate(candidate, store, payload)
+                    self.cache.put_pool(pool_state)
+                    self.cache.put_token(token0)
+                    self.cache.put_token(token1)
+                    processed += 1
+                except (KeyError, TypeError, ValueError, RuntimeError):
+                    continue
+        return processed
