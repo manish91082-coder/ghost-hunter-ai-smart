@@ -9,6 +9,7 @@ class FakeRPC:
     def __init__(self, values):
         self.values = values
         self.calls = []
+        self.pair_result = None
 
     async def call(self, method, params=None, **kwargs):
         self.calls.append((method, params))
@@ -22,6 +23,11 @@ class FakeRPC:
             if isinstance(value, Exception):
                 raise value
             return value
+        if method == "eth_call" and params and isinstance(params[0], dict):
+            to = params[0].get("to")
+            data = params[0].get("data", "")
+            if to == V2_FACTORY and isinstance(data, str) and data.startswith("0xe6a43905") and self.pair_result is not None:
+                return self.pair_result
         if method == "eth_getCode":
             return "0x6000"
         raise AssertionError(f"unexpected RPC call: {method} {params}")
@@ -141,10 +147,9 @@ async def test_factory_reconciliation_must_match_event_pool():
         "data": "0x" + word(pool) + f"{1:064x}",
         "blockNumber": "0x10",
     })
-    key = ("eth_call", V2_FACTORY, "0xe6a43905" + word(token0)[2:] + word(token1)[2:])
-    adapter.rpc.values[key] = "0x" + word(pool)
+    adapter.rpc.pair_result = "0x" + word(pool)
     assert (await adapter.reconcile_candidate(candidate)).pool == pool
-    adapter.rpc.values[key] = "0x" + word(other)
+    adapter.rpc.pair_result = "0x" + word(other)
     with pytest.raises(ValueError, match="reconciliation mismatch"):
         await adapter.reconcile_candidate(candidate)
 
