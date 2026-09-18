@@ -341,3 +341,15 @@ Next:
 - Screenshots, previous green runs, commit existence, or local reasoning are never substitutes for the current-commit GitHub verification.
 - Canonical rule file: `GITHUB_STATE_VERIFICATION_GATE.md`.
 - Current gate status at time of lock: commit `49c3b41d491a87aaa4258ec10729ea92a5eb9f76`, Actions run #90 = **queued**, therefore **NOT YET VERIFIED**. No next implementation gate is to be promoted until run #90 reaches a successful terminal state.
+
+
+## 2026-09-19 — End-to-End QuickSwap Canonical Promotion Gate
+- Added a canonical single-block processing path: factory log scan -> fail-closed decode -> provider-diverse factory reconciliation -> exact-block pool reads -> exact-block token reads -> durable discovery evidence -> cache promotion.
+- Pool/token cache promotion now occurs only after durable discovery persistence succeeds.
+- Execution-critical pool/token reads use provider-diverse quorum at the candidate block.
+- Discovery rejection reasons are retained in-memory for forensic inspection instead of being silently discarded by the adapter.
+- Added regression coverage for the complete promotion path.
+- CI forensic loop caught and corrected an ABI fixture encoding defect; no defect was promoted without a successful revalidation.
+- Final verified baseline for this gate: commit `a97dce1f907c6bac7b043931763392c8114bf745`, GitHub Actions run #99 **SUCCESS**.
+- Live execution remains disabled.
+- Next gate: wire this canonical QuickSwap processing path into head/reorg orchestration with explicit replay context, then test restart/reorg replay end-to-end.
