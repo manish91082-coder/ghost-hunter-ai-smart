@@ -57,6 +57,7 @@ async def scan_and_decode_pool_events(
     scanner: AdaptiveLogScanner,
     query: LogQuery,
     adapter: Any,
+    pool_type: str,
 ) -> list[Any]:
     """Scan only the requested factory/topic range and fail closed per log."""
     logs = await scanner.scan(query)
@@ -64,7 +65,7 @@ async def scan_and_decode_pool_events(
     for log in logs:
         try:
             block_number = int(str(log.get("blockNumber", "0x0")), 16)
-            decoded.append(adapter.decode_log(adapter.pool_type, log))
+            decoded.append(adapter.decode_log(pool_type, log))
         except (KeyError, TypeError, ValueError):
             continue
     return decoded
