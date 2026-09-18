@@ -13,6 +13,7 @@ from .pool_events import (
 )
 from .protocols import VerifiedDeployment, verified_deployments
 from .rpc import MultiRPC
+from .store import DiscoveryRecord, DiscoveryStore
 
 ZERO_ADDRESS = "0x" + "0" * 40
 FACTORY_SELECTOR = "0xc45a0155"
@@ -32,6 +33,8 @@ class DiscoveryCandidate:
     created: PoolCreated
     block_number: int
     transaction_hash: str | None
+    block_hash: str | None = None
+    log_index: int | None = None
 
 
 def _hex(raw: Any) -> str:
@@ -114,7 +117,7 @@ class QuickSwapAdapter:
         if created.token0.lower() == created.token1.lower():
             raise ValueError("identical pool tokens")
         block_number = int(str(log.get("blockNumber", "0x0")), 16)
-        return DiscoveryCandidate(created, block_number, log.get("transactionHash"))
+        return DiscoveryCandidate(created, block_number, log.get("transactionHash"), log.get("blockHash"), int(str(log["logIndex"]), 16) if log.get("logIndex") is not None else None)
 
     async def _read(self, address: str, selector: str, extra: str = "") -> str:
         return _hex(await self.rpc.call("eth_call", [{"to": address, "data": selector + extra}, "latest"]))
@@ -259,3 +262,9 @@ class QuickSwapAdapter:
         if _is_zero(pool):
             return ZERO_ADDRESS
         return pool
+
+    def persist_candidate(self, candidate: DiscoveryCandidate, store: DiscoveryStore, payload: Any) -> bool:
+        if not candidate.block_hash: raise ValueError("discovery block_hash is required for persistence")
+        key = ":".join(map(str, self.candidate_key(candidate)))
+        record = DiscoveryRecord(candidate_key=key, venue=candidate.created.venue, pool_type=candidate.created.pool_type, pool_address=candidate.created.pool.lower(), block_number=candidate.block_number, block_hash=candidate.block_hash, transaction_hash=candidate.transaction_hash, log_index=candidate.log_index, payload_hash=store.payload_hash(payload))
+        return store.record_discovery(record, payload)
