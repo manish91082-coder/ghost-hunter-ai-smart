@@ -288,3 +288,11 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - Canonical coordinator and durable discovery store are now constructed by the data-plane orchestrator and invoked for each observed head.
 - Existing head-handler API was preserved after verification to avoid an integration regression.
 - Next: persist protocol discovery records directly from verified event processing and require diverse quorum for execution-critical pool/token reads.
+
+
+## 2026-09-19 Persistent Protocol Discovery Sync
+- QuickSwap candidates now retain block hash/log index evidence where present.
+- Verified candidates can be persisted through the durable SQLite store, with canonical block anchoring and idempotent replay.
+- Critical factory reconciliation is routed through provider-diverse quorum in the production MultiRPC implementation; lack of diversity fails closed.
+- DataPlane accepts a configurable SQLite store path for restart persistence.
+- Next: integrate persistence into the actual adaptive event-processing path and expand verified venue adapters only after deployment/ABI/runtime evidence gates.
