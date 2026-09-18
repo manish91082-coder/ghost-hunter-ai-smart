@@ -1,7 +1,7 @@
 # PROJECT STATUS
 
 ## STATUS
-**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE SKELETON IMPLEMENTED; P1 DISCOVERY RUNTIME IS NEXT**
+**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE + DISCOVERY PRIMITIVES IMPLEMENTED; VERIFIED PROTOCOL ADAPTER ACTIVATION IS NEXT**
 
 ## Repository
 - `manish91082-coder/ghost-hunter-ai-smart`
@@ -47,6 +47,10 @@ Build a dynamic Polygon PoS flash-loan arbitrage system that:
 - [x] Async parallel-read entry point
 - [x] Zero-cost GitHub CI test workflow
 - [x] src-layout package/build configuration
+- [x] Adaptive event-log scanner
+- [x] Verified event-topic registry boundary
+- [x] Reorg/canonical-head guard
+- [x] Discovery runtime design and tests
 
 ## Important Design Correction
 WSS/polling is an acceleration path, not canonical truth. A new-head event must trigger immediate downstream work, while execution-critical state is re-read/reconciled before authorization.
@@ -54,9 +58,9 @@ WSS/polling is an acceleration path, not canonical truth. A new-head event must 
 The system must target low-latency reaction and parallelism, but must not promise a fixed sub-second execution time because provider latency, chain state and network conditions are dynamic.
 
 ## P1 Runtime Architecture
-**NEW HEAD -> FAST INVALIDATION -> CHANGED LOGS -> AFFECTED POOLS -> AFFECTED TOKENS -> AFFECTED ROUTES -> CHEAP PREFILTER -> EXACT QUOTES**
+**NEW HEAD -> FAST INVALIDATION -> ADAPTIVE LOG SCAN -> POOL DISCOVERY -> TOKEN DISCOVERY -> STATE READ -> AFFECTED POOLS -> AFFECTED ROUTES -> CHEAP PREFILTER -> EXACT QUOTES**
 
-The next implementation adds actual protocol adapters and event-driven pool discovery.
+Discovery primitives are now implemented. The next step is activating only protocol adapters whose deployment addresses and event ABIs are verified from canonical sources.
 
 ## Current Files Added/Changed
 - `pyproject.toml`
@@ -73,6 +77,11 @@ The next implementation adds actual protocol adapters and event-driven pool disc
 - `tests/test_data_plane.py`
 - `.github/workflows/data-plane-ci.yml`
 - `README.md`
+- `src/ghost_hunter/data_plane/events.py`
+- `src/ghost_hunter/data_plane/scanner.py`
+- `src/ghost_hunter/data_plane/reorg.py`
+- `tests/test_discovery_runtime.py`
+- `P1_DISCOVERY_RUNTIME_DESIGN.md`
 
 ## Safety
 Live execution remains disabled in this phase. No transaction signer/executor has been introduced.
@@ -86,6 +95,12 @@ Live execution remains disabled in this phase. No transaction signer/executor ha
 
 ### P1 — Polygon Data Plane
 **IN PROGRESS**
+Completed this step:
+- adaptive log scanner
+- verified event-topic boundary
+- reorg guard
+- discovery runtime design
+
 Next:
 - real venue/factory adapters
 - event topic registry
@@ -131,6 +146,12 @@ Next:
 ### P8+ — Autonomous Optimization
 
 ## Project Log
+### 2026-09-19 — P1 Discovery Runtime
+- Added adaptive log scanning with range shrink/expand.
+- Added verified event-topic registry boundary so guessed topics cannot become execution truth.
+- Added canonical-head/reorg guard and overlap-rescan policy.
+- Added discovery runtime design and tests.
+
 ### 2026-09-19 — P1 Data-Plane Skeleton
 - Implemented async multi-provider RPC with batching and failover.
 - Added quorum read primitive for critical consistency checks.
