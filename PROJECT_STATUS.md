@@ -5,7 +5,7 @@
 ### Verification Doctrine
 **ZERO-DRIFT / MULTI-PASS VERIFICATION IS FROZEN.** Every implementation step must be audited repeatedly before being treated as complete. The target is 100 independent checks/passes where practical; this means repeated static inspection, invariant review, regression tests, failure-path tests, integration checks and re-audit, not a claim that one identical test was blindly executed 100 times. No step is promoted to execution merely because it passes once. Any discovered defect sends the step back to correction and re-verification.
 
-**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE HARDENING ACTIVE; VERIFIED PROTOCOL ADAPTER ACTIVATION REMAINS NEXT**
+**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE HARDENING ACTIVE; RUNTIME DEPLOYMENT VERIFICATION ADDED; EVENT TOPIC ACTIVATION STILL BLOCKED UNTIL CANONICAL TOPIC0 PROOF**
 
 ## Repository
 - `manish91082-coder/ghost-hunter-ai-smart`
@@ -68,6 +68,9 @@ Build a dynamic Polygon PoS flash-loan arbitrage system that:
 - [x] Discovery runtime design and tests
 - [x] Source-verified QuickSwap Polygon V2 + Algebra V3 deployment manifest
 - [x] Deployment manifest regression tests
+- [x] Runtime deployment verifier with chain/code/interface hard gates
+- [x] QuickSwap Algebra event signature corrected to documented `Pool(address,address,address)`
+- [ ] Canonical Keccak topic0 activation
 
 ## Important Design Correction
 WSS/polling is an acceleration path, not canonical truth. A new-head event must trigger immediate downstream work, while execution-critical state is re-read/reconciled before authorization.
@@ -220,3 +223,14 @@ Next:
 
 ## Last Updated
 2026-09-19 | Asia/Kolkata (IST)
+
+
+## 2026-09-19 — Runtime Deployment Verification Gate
+- Added `deployment_verifier.py` for runtime verification of manifest deployment anchors.
+- Verification now requires Polygon chain ID 137, non-empty runtime bytecode and successful documented read-only factory interface probes.
+- QuickSwap V2 additionally requires `allPairsLength()`; Algebra V3 currently requires the common documented `owner()` probe plus runtime code.
+- Verification evidence is fail-closed. Wrong chain, empty code or interface failure cannot activate a deployment.
+- Corrected the Algebra V3 event signature in `events.py` from an incorrect placeholder to the documented `Pool(address,address,address)`.
+- Canonical topic0 values are still intentionally not activated. The event registry remains fail-closed until a canonical Keccak-256 topic is independently verified.
+- Web research confirmed QuickSwap's Polygon V2 factory and Algebra V3 factory addresses and the Algebra `Pool` event/read-only factory interface. 
+- Local/CI regression validation is the next promotion gate; no live execution is enabled.
