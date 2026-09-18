@@ -315,3 +315,18 @@ Next:
 - DataPlane store path is configurable so deployments can use a persistent SQLite file instead of the in-memory default.
 - Added regression coverage for durable QuickSwap candidate persistence and idempotent replay.
 - No transaction signer or live execution was introduced.
+
+
+## 2026-09-19 — CI Failure Forensics + Regression Recovery Gate
+- Screenshot review was cross-checked against the live GitHub Actions history for `main`; the visible red runs were genuine `data-plane-ci` failures, not a UI-only artifact.
+- Forensic JUnit reporting was added to CI so failed pytest runs retain machine-readable evidence as a workflow artifact.
+- The investigation found four concrete regressions:
+  1. `tests/test_quickswap_adapter.py` had been accidentally truncated/corrupted to `[object Object]`; the complete regression suite was restored.
+  2. `test_discovery_runtime.py` called the obsolete two-argument `rescan_start()`; the test was aligned to the current one-argument API.
+  3. Discovery persistence canonicalizes pool addresses to lowercase; `DiscoveryRecord` now canonicalizes the dataclass value as well, preserving deterministic equality across restart.
+  4. Replay payload errors now distinguish existing-record payload mutation from initial record hash mismatch; the fail-closed semantics remain intact.
+- The Algebra event registry name was corrected from `PoolCreated` to the ABI event name `Pool`, matching the verified `Pool(address,address,address)` event.
+- QuickSwap factory reconciliation was hardened to use provider-diverse quorum reads in production.
+- Final verification evidence: GitHub Actions `data-plane-ci` run **#87** on commit `c6fe593cb79f00a732e2b6869f19c39bfb21d3c9` completed **SUCCESS**; pytest reported **44 tests, 0 failures, 0 errors, 0 skipped**.
+- Live execution remains disabled.
+- Next gate: integrate scanner -> canonical coordinator -> verified QuickSwap adapter -> quorum reconciliation -> exact-block pool/token state reads -> durable evidence persistence -> cache as one end-to-end adaptive event-processing path, then re-audit reorg/replay behavior.
