@@ -10,6 +10,11 @@
 - Repository ID: `1376339960`
 - Legacy repositories: MUST NOT BE MODIFIED
 
+## Zero-Cost Constraint
+**ZERO-COST-FIRST IS FROZEN.** Core project development and shadow-mode operation must use local/open-source/free-tier resources wherever technically possible. No paid provider is a mandatory dependency. Provider abstraction, quota tracking, fallback and circuit breakers are required. See ZERO_COST_ARCHITECTURE.md.
+
+Current verified example: Alchemy currently advertises a free tier of 30M CU/month and 25 RPS with Polygon support. This is a provider quota, not a permanent guarantee. citeturn0search3turn0search11
+
 ## Current Goal
 Create a dynamic, AI-assisted, deterministic-verifier-controlled Polygon PoS flash-loan arbitrage system that:
 - discovers all relevant pools/pairs/venues dynamically
@@ -42,6 +47,7 @@ Create a dynamic, AI-assisted, deterministic-verifier-controlled Polygon PoS fla
 - [x] Defined private-submission/anti-sandwich architecture.
 - [x] Defined 20 specialized agentic roles.
 - [x] Performed current Polygon venue/MEV/flash-loan research.
+- [x] Added ZERO_COST_ARCHITECTURE.md and froze zero-cost-first policy.
 
 ## Research Findings
 ### Flash liquidity
@@ -160,7 +166,7 @@ Only after acceptance criteria are met.
 Continuous AC tuning, regression and strategy expansion.
 
 ## Current Next Action
-**P1: build the Polygon dynamic data-plane specification and implementation skeleton.**
+**P1: build the Polygon dynamic data-plane specification and implementation skeleton using only local/open-source/free-tier resources.**
 
 The next implementation step must begin with real chain/venue discovery, not strategy guessing.
 
