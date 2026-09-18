@@ -75,6 +75,7 @@ Build a dynamic Polygon PoS flash-loan arbitrage system that:
 - [x] Canonical block-hash anchoring for discoveries
 - [x] Idempotent replay with payload-hash integrity
 - [x] Reorg rollback/orphan marking and replacement-chain replay
+- [x] Canonical ancestry coordinator with overlap-rescan trigger
 
 ## Important Design Correction
 WSS/polling is an acceleration path, not canonical truth. A new-head event must trigger immediate downstream work, while execution-critical state is re-read/reconciled before authorization.
@@ -274,7 +275,7 @@ Next:
 - Added a fail-closed `reconcile_candidate()` gate requiring the factory's direct pair lookup to match the event-derived pool address.
 - Added regression coverage for both matching and mismatching factory reconciliation and duplicate replay detection.
 - This prevents an event-only pool candidate from becoming normalized state without independent factory agreement.
-- Next gate: integrate the durable store into the live discovery orchestrator, add explicit block ancestry/reorg replay coordination, and strengthen provider-diverse reconciliation for execution-critical state.
+- Next gate: wire canonical coordination into the head/discovery orchestrator and strengthen provider-diverse reconciliation for execution-critical state.
 
 
 ## 2026-09-19 — Durable Discovery Evidence + Reorg Gate
@@ -284,3 +285,10 @@ Next:
 - Block-hash replacement at a fork point automatically orphans discoveries at/after that height; replacement-chain discoveries can then be replayed against the new canonical block hash.
 - Added tests for missing block hash, restart persistence, duplicate replay, payload mutation, explicit rewind, replacement block hash and orphan status.
 - No transaction signer, private key, or live execution path was added.
+
+
+## 2026-09-19 — Canonical Ancestry Coordinator Gate
+- Hardened `ReorgGuard` so discontinuous/forked heads do not overwrite the last known canonical head.
+- Added `CanonicalCoordinator` to couple ancestry validation with durable SQLite evidence and trigger overlap replay after a discontinuity.
+- Added regression tests for non-advancing fork detection, durable rewind/replay and same-head idempotence.
+- No live execution path was introduced.
