@@ -254,3 +254,12 @@ Next:
 - Added scanner/adapter regression tests for wrong emitter/topic, zero pool, factory mismatch and successful V2 state normalization.
 - No live execution was enabled. The adapter is discovery/state infrastructure only.
 - Next gate: strengthen ABI decoding and token metadata/code-hash normalization, add replay/idempotence and reconciliation tests, then persist discovery state.
+
+
+## 2026-09-19 — Token Metadata Normalization Gate
+- Hardened QuickSwap token discovery to require runtime bytecode and a valid uint256-compatible `decimals()` response.
+- Added ABI string decoding for standard dynamic `name()`/`symbol()` responses with fail-soft handling for non-standard tokens.
+- Token code is hashed into the normalized token state for identity/change detection.
+- Added regression coverage for ABI string decoding and malformed empty responses.
+- This remains discovery/state infrastructure; no transaction execution path was introduced.
+- Next gate: make discovery replay/idempotence explicit and reconcile event-derived pools against factory `getPair`/`poolByPair` results before persistent storage.
