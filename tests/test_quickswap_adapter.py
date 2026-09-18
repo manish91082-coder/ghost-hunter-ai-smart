@@ -220,7 +220,7 @@ async def test_process_block_persists_before_cache_promotion():
 
     with DiscoveryStore() as store:
         store.record_block(16, "h10", "h9")
-        assert await adapter.process_block(scanner, store, 16) == 1
+        assert await adapter.process_block(scanner, store, 16) == 1, adapter.rejections
         assert len(store.canonical_records()) == 1
         assert pool.lower() in adapter.cache.pools
         assert token0.lower() in adapter.cache.tokens
