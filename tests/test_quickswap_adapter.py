@@ -209,8 +209,8 @@ async def test_process_block_persists_before_cache_promotion():
     adapter.rpc.values[("eth_call", pool, "0x0dfe1681")] = "0x" + word(token0)
     adapter.rpc.values[("eth_call", pool, "0xd21220a7")] = "0x" + word(token1)
     adapter.rpc.values[("eth_call", pool, "0x0902f1ac")] = "0x" + "0" * 128 + "0" * 64
-    adapter.rpc.values[("eth_call", token0, "0x313ce567")] = f"{18:064x}"
-    adapter.rpc.values[("eth_call", token1, "0x313ce567")] = f"{6:064x}"
+    adapter.rpc.values[("eth_call", token0, "0x313ce567")] = "0x" + f"{18:064x}"
+    adapter.rpc.values[("eth_call", token1, "0x313ce567")] = "0x" + f"{6:064x}"
 
     scanner = AdaptiveLogScanner(adapter.rpc, initial_range=1, min_range=1, max_range=1)
     scanner.rpc.logs = [log] if hasattr(scanner.rpc, "logs") else None
