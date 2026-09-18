@@ -70,23 +70,39 @@ class PolygonWSS:
             raise RuntimeError("no WSS providers available")
         return sorted(candidates, key=lambda p: p.score)
 
+    async def _subscribe_new_heads(self, ws: object, timeout_seconds: float) -> str:
+        await ws.send(json.dumps({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "eth_subscribe",
+            "params": ["newHeads"],
+        }))
+        raw = await asyncio.wait_for(ws.recv(), timeout=timeout_seconds)
+        data = json.loads(raw)
+        if data.get("id") != 1:
+            raise RuntimeError("unexpected WSS subscription response")
+        if "error" in data:
+            raise RuntimeError(f"WSS subscription failed: {data['error']}")
+        subscription_id = data.get("result")
+        if not isinstance(subscription_id, str) or not subscription_id:
+            raise RuntimeError("WSS subscription returned no subscription id")
+        return subscription_id
+
     async def heads(self) -> AsyncIterator[BlockState]:
         while True:
             provider = self._ordered()[0]
             started = time.perf_counter()
             try:
                 async with websockets.connect(provider.url, open_timeout=provider.timeout_seconds) as ws:
-                    await ws.send(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "eth_subscribe", "params": ["newHeads"]}))
+                    await self._subscribe_new_heads(ws, provider.timeout_seconds)
                     provider.record(True, (time.perf_counter() - started) * 1000)
                     async for message in ws:
-                        received = time.perf_counter()
                         data = json.loads(message)
                         result = data.get("params", {}).get("result")
                         if not result:
                             continue
                         number = int(result["number"], 16)
                         provider.last_block = number
-                        provider.record(True, (time.perf_counter() - received) * 1000)
                         yield BlockState(
                             number=number,
                             hash=result["hash"],
@@ -108,7 +124,7 @@ class PolygonWSS:
                 started = time.perf_counter()
                 try:
                     async with websockets.connect(provider.url, open_timeout=provider.timeout_seconds) as ws:
-                        await ws.send(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "eth_subscribe", "params": ["newHeads"]}))
+                        await self._subscribe_new_heads(ws, provider.timeout_seconds)
                         provider.record(True, (time.perf_counter() - started) * 1000)
                         return {"name": provider.name, "state": provider.state, "ok": True, "latency_ms": provider.ewma_latency_ms}
                 except Exception as exc:
