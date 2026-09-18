@@ -6,32 +6,33 @@
 - Default branch: `main`
 - Repository ID: `1376339960`
 - Project working name: Ghost Hunter AI Smart
-- New project focus: Polygon PoS dynamic flash-loan arbitrage intelligence and controlled execution.
+- Focus: Polygon PoS dynamic flash-loan arbitrage intelligence and controlled execution.
 - Legacy repositories are isolated and must not be modified.
 
 ## Governing Objective
-Build a production-grade, evidence-driven, AI-assisted but deterministic-verifier-controlled system that continuously discovers Polygon PoS liquidity venues, pools, pairs, routes and flash-loan arbitrage opportunities.
+Build a production-grade, evidence-driven, AI-assisted but deterministic-verifier-controlled system that continuously discovers Polygon liquidity venues, pools, pairs, routes and flash-loan arbitrage opportunities.
 
-Economic eligibility gate:
+Hard economic eligibility gate:
 **Expected verified net profit must be strictly greater than USD 0.20 after all modeled execution costs.**
 
-The $0.20 threshold is an execution eligibility policy, not a guarantee that every submitted transaction will realize profit.
+This is an eligibility threshold, not a guarantee of realized profit.
 
-## Absolute Project Rules
-1. All market-dependent values must be dynamic.
+## Absolute Rules
+1. All market-dependent values are dynamic.
 2. No static pair/pool list is authoritative.
-3. Discover and reconcile pools continuously from on-chain events/state plus trusted indexers/APIs.
+3. Discovery must reconcile on-chain events/state with trusted secondary sources.
 4. AI proposes; deterministic mathematics verifies; security policy authorizes; executor submits; independent reconciliation proves realized PnL.
-5. Never submit a candidate whose exact simulation fails.
-6. Never submit when required cost or state information is unknown.
-7. Never bypass the safety gate to force a trade.
+5. Never submit without passing exact state-aware simulation.
+6. Never submit when a material cost or required state is unknown.
+7. Never bypass safety gates to force a trade.
 8. Never modify legacy repositories.
-9. Every project-driving response must update durable project state in GitHub.
-10. Every future AI agent must read PROJECT_STATUS.md and PROJECT_MEMORY.md before acting.
-11. The command `next` means inspect -> decide -> execute permitted next step -> validate -> persist state -> report.
+9. Every project-driving response updates durable project state in GitHub.
+10. Every future project agent reads PROJECT_STATUS.md and PROJECT_MEMORY.md before acting.
+11. `next` means inspect -> decide -> execute permitted next step -> validate -> persist -> report.
 12. Historical chat claims never override current verified repository state.
+13. ZERO-COST-FIRST is non-negotiable.
 
-## Profit Policy
+## Profit Model
 ExpectedNetUSD =
 GrossOutputUSD
 - PrincipalRepaymentUSD
@@ -46,100 +47,181 @@ GrossOutputUSD
 Eligibility:
 **ExpectedNetUSD > 0.20**
 
-The calculation must be amount-specific and state-specific. Percentage spread alone is insufficient.
+The calculation is exact, amount-specific and state-specific.
 
-## Zero-Gas-Loss Policy
-A reverted blockchain transaction can still consume gas, so literal post-submission zero gas loss cannot be mathematically guaranteed.
+## Zero-Gas-Loss Interpretation
+A reverted transaction can consume gas. Literal post-submission zero gas loss cannot be guaranteed.
 
-The engineering target is:
-- no submission without simulation
-- exact state-aware preflight
-- private transaction submission where supported
+Engineering objective:
+- exact preflight
+- simulation
+- private submission where required
 - atomic execution
 - hard gas ceiling
 - native-balance floor
 - strict profitability invariant
 - automatic rejection under uncertainty
-- independent receipt and wallet-delta reconciliation
+- independent receipt/PnL reconciliation
 
-## Dynamic Market Rule
-Dynamic inputs include:
-- block/state
+## Conceptual System Model
+The system is a dynamic market graph plus deterministic proof engine.
+
+Core loop:
+**CHAIN STATE -> DISCOVERY -> NORMALIZATION -> LIQUIDITY GRAPH -> SIGNALS -> ROUTE/AMOUNT SEARCH -> EXACT MATH -> FULL ECONOMICS -> SIMULATION -> ADVERSARIAL CHECK -> PROFIT GATE -> AUTHORIZATION -> EXECUTION -> RECEIPT -> REALIZED PnL -> LEARNING**
+
+## Mathematical Model
+Supported pool math families:
+- V2 constant-product
+- V3/Algebra concentrated liquidity
+- StableSwap
+- weighted/composable pools
+
+Execution-critical math:
+- integer base units
+- explicit on-chain rounding
+- amount-dependent price impact
+- dynamic fees
+- dynamic liquidity/state
+- exact repayment
+
+Floating point is not authoritative.
+
+## Strategy Search Space
+The engine explores combinations of:
+- flash/start asset
+- token pairs
+- venue/pool
+- pool type
+- fee tier
+- direction
+- hop count
+- route ordering
+- cycle length
+- amount
+- amount split
+- concentrated-liquidity boundaries
+- gas state
+- state freshness
+- submission method
+- historical execution profile
+
+Because full enumeration is combinatorially expensive, a staged search funnel is mandatory:
+**structural filter -> conservative upper bound -> exact quote -> amount optimization -> full economics -> simulation -> adversarial security -> authorization.**
+
+## Strategy Families
+Initial and future families include:
+- two-leg cross-venue
+- V2/V2
+- V2/V3
+- V3/V2
+- V3/V3
+- fee-tier arbitrage
+- triangular
+- multi-hop
+- stablecoin
+- concentrated-liquidity micro-arbitrage
+- StableSwap
+- weighted/composable
+- state-change/backrun subject to policy
+- router disagreement as a signal
+- ML/statistical ranking
+
+Signals never authorize execution.
+
+## Amount Optimization
+Profit is generally non-linear with trade size.
+
+The optimizer may evaluate:
+- logarithmic samples
+- liquidity-derived boundaries
+- fee/gas break-even points
+- tick boundaries
+- local maxima
+- discrete refinement
+
+No global-optimum assumption is accepted without evidence.
+
+## Robustness
+Track:
+- ExpectedNetUSD
+- RobustNetUSD
+- sensitivity to amount
 - gas
-- pool reserves/liquidity/ticks/weights
-- fee tiers
-- token behavior
-- flash-loan availability and fee
-- route costs
-- RPC/WSS latency
-- private submission health
-- wallet balance
-- competition/market conditions
+- price movement
+- liquidity/state movement
+- latency
 
-Adaptive Control (AC) may tune search and execution parameters within hard safety bounds, but cannot weaken the $0.20 gate, simulation requirement, security requirements, capital limits, or kill switch.
+A fragile edge can be rejected even if its raw expected profit passes.
 
-## Polygon Research Baseline
-Current research indicates:
-- Aave V3 is deployed on Polygon and exposes permissionless protocol interaction; flash-loan availability must be checked dynamically per reserve and current configuration. citeturn0search2turn0search6
-- QuickSwap publishes Polygon V2/V3 deployment addresses and its V3 factory emits pool-creation events, supporting event-driven pool discovery. citeturn1search13turn1search14
-- Balancer documents Polygon deployment contracts and exposes chain-specific pool APIs, including all-pools retrieval for chain 137. citeturn3search4turn3search9
-- Uniswap's developer documentation exposes V3 subgraph entities including factory pool counts and pool state fields, but production truth should still be reconciled with on-chain state. citeturn3search7turn3search8
-- Current third-party Polygon pool snapshots show substantial fragmentation across Uniswap V4/V3/V2, QuickSwap V2/V3, Balancer, SushiSwap, Curve, KyberSwap and other venues. These counts are snapshots, not permanent truth. citeturn3search14
-- Polygon Private Mempool is documented by Polygon as a private transaction submission endpoint intended to protect transactions from frontrunning and sandwich attacks. It must be operationally verified before production use. citeturn1search0turn1search3
-- Polygon documentation/material indicates fast block production/finality; the engine must measure actual inter-block timing rather than hard-code a two-second assumption. citeturn2search8
+## Hard Execution Invariants
+Reject if:
+- profit <= $0.20
+- material cost unknown
+- stale state
+- simulation failure
+- route mismatch
+- unallowlisted contract
+- wallet/gas floor failure
+- unresolved token behavior
+- required private path unavailable
+- security check failure
+- nonce conflict
 
-## Strategy Families Frozen for Initial Research
-- Cross-DEX two-leg arbitrage
-- V2/V3 and V3/V3 arbitrage
-- Concentrated-liquidity fee-tier arbitrage
-- Triangular arbitrage
-- Multi-hop cross-venue arbitrage
-- Stablecoin arbitrage
-- Curve stable/FX routes
-- Balancer weighted/composable routes
-- State-change/backrun candidates subject to security policy
-- ML/AI candidate ranking, never replacing deterministic verification
+## Realized PnL
+Predicted, simulated and realized PnL remain separate.
 
-## Agentic Roles
-The architecture defines specialized roles in `AGENT_ROLES.md`, including:
-Master Orchestrator, Polygon Chain Scout, Venue Discovery, Token Intelligence, Pool State, Route Graph, Strategy Generator, Exact Math, Economic Auditor, Simulation, Adversarial Security, MEV/Private Orderflow, Execution Guardian, Wallet/Capital Guardian, Receipt/PnL Auditor, Adaptive Control, Research Scientist, Evidence/Provenance, Regression, and Incident Response.
+Realized PnL is derived independently from:
+- receipt
+- gas used/effective price
+- token balance deltas
+- native balance delta
+- flash repayment
+- actual fees
 
-## Repository Artifacts
+A model number can never be relabeled as realized profit.
+
+## Zero-Cost Architecture
+Mandatory development path:
+- local compute
+- Python/Node.js
+- Docker
+- open-source libraries
+- SQLite/DuckDB/JSONL/Parquet
+- local/fork simulation
+- free RPC/API tiers where available
+- local/free AI where useful
+
+No paid dependency is mandatory.
+
+## Wallet Constraint
+User reports approximately $5-$6 POL. Treat this as constrained future validation capital. Early work remains local, simulated, forked, shadow and paper based.
+
+## Durable Artifacts
 - PROJECT_MEMORY.md
 - PROJECT_STATUS.md
 - SYSTEM_BLUEPRINT.md
 - AGENT_ROLES.md
 - STRATEGY_CATALOG.md
 - DYNAMIC_ENGINE_SPEC.md
+- ZERO_COST_ARCHITECTURE.md
+- CONCEPTUAL_MASTER_PLAN.md
+- MATHEMATICAL_ENGINE_SPEC.md
+- STRATEGY_SEARCH_SPACE.md
+- PROFITABILITY_EXECUTION_INVARIANTS.md
 
 ## Continuity Protocol
 For every project-driving turn:
-1. Verify GitHub state.
-2. Read status and memory.
-3. Execute only the justified next step.
-4. Validate with evidence.
-5. Update status.
-6. Update memory when a durable rule/decision/context changes.
-7. Update relevant project specification files.
-8. Commit with a descriptive message.
-9. Report exact changed files/commits and evidence.
-
-## Zero-Cost Resource Rule
-**ZERO-COST-FIRST is now a non-negotiable project constraint.** Core development, research, discovery, simulation, testing and shadow-mode operation must be possible with open-source/local/free-tier resources. No paid SaaS, paid AI, paid RPC, paid database or paid cloud is a mandatory dependency. Provider abstraction and fallbacks are mandatory. See ZERO_COST_ARCHITECTURE.md.
-
-## Wallet Constraint
-User reports approximately $5–$6 of Polygon-native balance. This is a constrained execution budget. It must not be treated as sufficient justification for live trading. Early phases remain discovery, simulation, shadow and controlled validation until evidence supports progression.
-
-## Historical Lessons Inherited
-Earlier Ghost Hunter work established that the following are production blockers unless independently proven:
-- synthetic/unproven V3 triangle opportunities
-- incomplete or unsafe executor paths
-- modeled PnL being mistaken for realized PnL
-- weak slippage/router/callback controls
-- unproven tuner causality
-These are audit requirements for the new project, not assumptions of correctness.
+1. verify repository state
+2. read status/memory
+3. choose the justified next step
+4. execute permitted work
+5. validate
+6. update relevant specs
+7. update status
+8. update memory when durable decisions change
+9. commit
+10. report exact evidence
 
 ## Last Memory Sync
-- Date: 2026-09-19
-- Timezone: Asia/Kolkata (IST)
-- Reason: Polygon project scope plus the zero-cost-first resource policy was frozen and recorded.
+2026-09-19 | Asia/Kolkata
+Reason: conceptual master foundation completed and P1 data-plane implementation identified as the next execution step.
