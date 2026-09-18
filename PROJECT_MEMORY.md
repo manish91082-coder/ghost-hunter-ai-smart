@@ -196,3 +196,12 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - Fleet-wide health probes run concurrently with bounded probe concurrency.
 - Regression tests explicitly lock the no-automatic-delete requirement.
 - Next infrastructure increment: persistent fleet metrics/registry and independent HTTP/WSS fleet rotation.
+
+
+## Verification Doctrine (2026-09-19)
+- Every implementation step is subject to repeated audit/test passes before promotion.
+- Target: 100 independent checks/passes where practical, using different verification dimensions rather than blindly repeating one identical test.
+- Required dimensions: static code inspection, invariants, unit/regression tests, failure-path tests, integration checks, state/reorg checks, security/economic review and post-change re-audit.
+- A discovered defect blocks promotion until corrected and re-verified.
+- No live execution is allowed to bypass this gate.
+- Goal alignment is mandatory: every step must have a direct, documented contribution to the final autonomous Polygon arbitrage objective.
