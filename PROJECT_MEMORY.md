@@ -187,3 +187,12 @@ Approximately $5-$6 POL is treated as constrained future validation capital. It 
 ## Last Memory Sync
 2026-09-19 | Asia/Kolkata
 Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints are retained and automatically rotated/cooldown-probed/restored; routine provider management is no-manual-work. Next implementation upgrade adds capability-aware health scoring, block-lag/rate-limit detection, recovery probes and WSS fleet rotation before/alongside verified protocol adapters.
+
+
+## 2026-09-19 RPC Fleet Implementation Sync
+- `MultiRPC` is now an autonomous fleet manager rather than a simple primary/backup client.
+- Endpoint state is retained across failures; cooldown, rate-limit backoff, quarantine/probation semantics and recovery probing are runtime states, not deletion.
+- Requests are routed by health/latency/capability score; critical quorum reads use provider-diverse selection.
+- Fleet-wide health probes run concurrently with bounded probe concurrency.
+- Regression tests explicitly lock the no-automatic-delete requirement.
+- Next infrastructure increment: persistent fleet metrics/registry and independent HTTP/WSS fleet rotation.
