@@ -76,3 +76,37 @@ async def test_quorum_fails_when_only_one_provider_family_exists():
     rpc = MultiRPC([a, a2])
     with pytest.raises(Exception, match="diversity"):
         await rpc.quorum_call("eth_blockNumber", quorum=2)
+
+
+@pytest.mark.asyncio
+async def test_head_context_propagates_replay_decision():
+    from ghost_hunter.data_plane.models import BlockState
+    from ghost_hunter.data_plane.orchestrator import DataPlane, HeadContext
+
+    class FakeChain:
+        CHAIN_ID = 137
+        async def chain_id(self):
+            return 137
+        async def head_poll(self, _interval):
+            yield BlockState(10, "h10", "h9", 0, None, 0)
+            yield BlockState(11, "fork11", "wrong", 0, None, 0)
+
+    class FakeCanonical:
+        def __init__(self):
+            self.calls = 0
+        def observe(self, head):
+            self.calls += 1
+            return (True, None) if self.calls == 1 else (False, 8)
+
+    plane = DataPlane.__new__(DataPlane)
+    plane.chain = FakeChain()
+    plane.canonical = FakeCanonical()
+
+    seen = []
+    async def handler(ctx):
+        seen.append(ctx)
+
+    await plane.run_heads_context(handler, poll_interval=0)
+    assert isinstance(seen[0], HeadContext)
+    assert seen[0].accepted and seen[0].replay_start is None
+    assert not seen[1].accepted and seen[1].replay_start == 8
