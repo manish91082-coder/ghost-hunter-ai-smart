@@ -26,6 +26,24 @@ class FakeRPC:
         raise AssertionError(f"unexpected RPC call: {method} {params}")
 
 
+class FakeRPC:
+    def __init__(self, values):
+        self.values = values
+        self.calls = []
+
+    async def call(self, method, params=None, **kwargs):
+        self.calls.append((method, params))
+        key = (method, params[0]["to"] if params and isinstance(params[0], dict) and "to" in params[0] else None, params[0]["data"] if params and isinstance(params[0], dict) and "data" in params[0] else None)
+        if key in self.values:
+            value = self.values[key]
+            if isinstance(value, Exception): raise value
+            return value
+        if method == "eth_getCode": return "0x6000"
+        raise AssertionError(f"unexpected RPC call: {method} {params}")
+
+    async def quorum_call(self, method, params=None, quorum=2, **kwargs):
+        return await self.call(method, params, **kwargs)
+
 def word(addr):
     return "0" * 24 + addr[2:].lower()
 
