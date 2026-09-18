@@ -239,3 +239,12 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - Topic values were corroborated from actual Polygon factory transaction logs, while official QuickSwap documentation confirms the event signatures and deployment addresses.
 - Added `pool_events.py` with fail-closed ABI-word decoders for both events.
 - Static pool inventories remain forbidden; only factory-emitted runtime discoveries may create pool candidates.
+
+
+## 2026-09-19 QuickSwap Scanner Adapter Sync
+- Added `quickswap.py` as a fail-closed runtime discovery adapter for verified Polygon QuickSwap V2 and Algebra V3 deployments.
+- Factory emitter and event topic0 are checked before a pool-created log can become a candidate.
+- Direct pool verification requires runtime bytecode and factory/token0/token1 consistency. V2 reads reserves; Algebra reads the documented pool global-state boundary.
+- Added factory reconciliation calls for V2 `getPair` and Algebra `poolByPair`.
+- Added scanner integration and regression tests for wrong emitter/topic, zero pool and factory mismatch.
+- No static pool inventory and no live transaction execution were introduced.
