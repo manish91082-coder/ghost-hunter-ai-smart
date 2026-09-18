@@ -1,6 +1,10 @@
 # PROJECT STATUS
 
 ## STATUS
+
+### Verification Doctrine
+**ZERO-DRIFT / MULTI-PASS VERIFICATION IS FROZEN.** Every implementation step must be audited repeatedly before being treated as complete. The target is 100 independent checks/passes where practical; this means repeated static inspection, invariant review, regression tests, failure-path tests, integration checks and re-audit, not a claim that one identical test was blindly executed 100 times. No step is promoted to execution merely because it passes once. Any discovered defect sends the step back to correction and re-verification.
+
 **PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE + AUTONOMOUS RPC FLEET UPGRADE IMPLEMENTED; VERIFIED PROTOCOL ADAPTER ACTIVATION IS NEXT**
 
 ## Repository
@@ -160,7 +164,13 @@ Next:
 - Frozen many-RPC/many-WSS architecture with automatic rotation and provider-diverse quorum.
 - RPCs are retained when unhealthy; runtime uses cooldown/quarantine/probation and automatic recovery probes instead of deletion.
 - Routine provider switching is explicitly no-manual-work.
-- Next: WSS fleet rotation, persistent RPC metrics/registry, verified protocol adapters and deployment discovery.
+- Next: persistent RPC/WSS fleet metrics and registry, then verified protocol adapters and deployment discovery, with multi-pass verification at each gate.
+
+### 2026-09-19 — Verification Doctrine + RPC/WSS Audit
+- User requirement locked: every project step must be repeatedly checked, tested and audited before promotion, with a target of 100 independent verification passes where practical.
+- Verification includes static review, invariants, unit/regression tests, failure-path testing, integration checks and post-change re-audit.
+- During this audit a duplicate `probe_all` implementation in WSS was detected and removed before treating the WSS step as complete.
+- No live execution is enabled; passing tests never override safety/economic gates.
 
 ### 2026-09-19 — Autonomous RPC Fleet Runtime Upgrade
 - Upgraded `MultiRPC` into an autonomous fleet manager with capability-aware routing and health scoring.
