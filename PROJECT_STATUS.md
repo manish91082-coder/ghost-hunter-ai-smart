@@ -5,7 +5,7 @@
 ### Verification Doctrine
 **ZERO-DRIFT / MULTI-PASS VERIFICATION IS FROZEN.** Every implementation step must be audited repeatedly before being treated as complete. The target is 100 independent checks/passes where practical; this means repeated static inspection, invariant review, regression tests, failure-path tests, integration checks and re-audit, not a claim that one identical test was blindly executed 100 times. No step is promoted to execution merely because it passes once. Any discovered defect sends the step back to correction and re-verification.
 
-**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE HARDENING ACTIVE; RUNTIME DEPLOYMENT VERIFICATION ADDED; EVENT TOPIC ACTIVATION STILL BLOCKED UNTIL CANONICAL TOPIC0 PROOF**
+**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE HARDENING ACTIVE; QUICKSWAP EVENT TOPICS + FAIL-CLOSED DECODERS ACTIVE; SCANNER INTEGRATION ACTIVE**
 
 ## Repository
 - `manish91082-coder/ghost-hunter-ai-smart`
@@ -70,7 +70,7 @@ Build a dynamic Polygon PoS flash-loan arbitrage system that:
 - [x] Deployment manifest regression tests
 - [x] Runtime deployment verifier with chain/code/interface hard gates
 - [x] QuickSwap Algebra event signature corrected to documented `Pool(address,address,address)`
-- [ ] Canonical Keccak topic0 activation
+- [x] Canonical Keccak topic0 activation
 
 ## Important Design Correction
 WSS/polling is an acceleration path, not canonical truth. A new-head event must trigger immediate downstream work, while execution-critical state is re-read/reconciled before authorization.
@@ -244,3 +244,13 @@ Next:
 - Decoder tests cover exact topic length, indexed-address decoding, pool address decoding, V2 creation index and malformed-log rejection.
 - Pool discovery remains runtime-driven. No static pool inventory was introduced.
 - Next gate: wire the verified topics/decoders into the adaptive log scanner and add canonical-emitter filtering plus direct pool/token state reads.
+
+
+## 2026-09-19 — QuickSwap Scanner + Runtime Pool Verification Gate
+- Added `quickswap.py` as a fail-closed runtime adapter for the verified Polygon QuickSwap V2 and Algebra V3 factory deployments.
+- Scanner integration now decodes only logs whose emitter and topic0 match the verified deployment/event pair; malformed or mismatched logs are discarded rather than promoted.
+- Direct pool validation requires runtime code plus factory/token0/token1 consistency. V2 additionally reads reserves; Algebra reads the pool global-state ABI boundary.
+- Added reconciliation hooks for V2 `getPair` and Algebra `poolByPair` using runtime factory calls.
+- Added scanner/adapter regression tests for wrong emitter/topic, zero pool, factory mismatch and successful V2 state normalization.
+- No live execution was enabled. The adapter is discovery/state infrastructure only.
+- Next gate: strengthen ABI decoding and token metadata/code-hash normalization, add replay/idempotence and reconciliation tests, then persist discovery state.
