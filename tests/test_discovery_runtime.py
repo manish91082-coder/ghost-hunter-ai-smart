@@ -3,6 +3,7 @@ from ghost_hunter.data_plane.cache import StateCache
 from ghost_hunter.data_plane.events import EventRegistry, EventTopic
 from ghost_hunter.data_plane.reorg import CanonicalHead, ReorgGuard
 from ghost_hunter.data_plane.scanner import AdaptiveLogScanner, LogQuery
+from ghost_hunter.data_plane.wss import PolygonWSS, WSSProvider
 
 
 def test_event_registry_requires_verified_topic():
@@ -26,3 +27,13 @@ def test_discovery_venues_are_deduplicated():
     d.register(VenueAdapterSpec("demo", ("v2",), ("0xF",), "factory-events"))
     d.register(VenueAdapterSpec("demo", ("v3",), ("0xG",), "factory-events"))
     assert d.all_venues() == ("demo",)
+
+
+def test_wss_fleet_retains_all_endpoints():
+    providers = [WSSProvider("wss-a", "ws://a"), WSSProvider("wss-b", "ws://b")]
+    fleet = PolygonWSS(providers)
+    providers[0].record(False, 100.0)
+    providers[0].record(False, 100.0)
+    providers[0].record(False, 100.0)
+    assert providers[0].state == "cooldown"
+    assert len(fleet.providers) == 2
