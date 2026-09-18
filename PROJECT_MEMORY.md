@@ -256,3 +256,11 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - Runtime token bytecode is hashed for identity/change detection.
 - Non-standard optional metadata is fail-soft; missing material state still blocks downstream math.
 - Added regression coverage for dynamic ABI string decoding.
+
+
+## 2026-09-19 Reconciliation + Replay Integrity Sync
+- Added stable QuickSwap discovery candidate keys.
+- Added cache-based idempotence gate so replayed pool-creation events do not blindly create duplicate normalized records.
+- Added fail-closed factory reconciliation: event-derived pool address must equal the factory's direct pair lookup result.
+- Added regression tests for agreement, disagreement and duplicate replay.
+- Persistent block-hash/evidence records and multi-provider reconciliation remain future gates.
