@@ -205,3 +205,12 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - A discovered defect blocks promotion until corrected and re-verified.
 - No live execution is allowed to bypass this gate.
 - Goal alignment is mandatory: every step must have a direct, documented contribution to the final autonomous Polygon arbitrage objective.
+
+
+## 2026-09-19 RPC/WSS Hardening Sync
+- Fixed RPC provider ordering side effects.
+- Added freshest-head reference comparison and retained quarantine for repeated lag.
+- Redacted URL query strings in registry snapshots.
+- Required actual WSS subscription confirmation for health.
+- Removed per-message processing time from WSS latency scoring.
+- Latest hardening CI was still in progress at sync time; no success claim made.
