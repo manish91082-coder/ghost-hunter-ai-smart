@@ -80,6 +80,7 @@ class QuickSwapAdapter:
         self.cache = cache or StateCache()
         self.deployments = verified_deployments(137)
         self._by_key = {(d.venue, d.pool_type): d for d in self.deployments}
+        self.rejections: list[dict[str, Any]] = []
 
     def deployment(self, pool_type: str) -> VerifiedDeployment:
         try:
@@ -273,6 +274,7 @@ class QuickSwapAdapter:
     async def process_block(self, scanner: Any, store: DiscoveryStore, block_number: int) -> int:
         """Promote only fully verified QuickSwap discoveries from one canonical block."""
         processed = 0
+        self.rejections = []
         from .scanner import LogQuery
         for pool_type in ("v2", "algebra_v3"):
             query = self.log_query(pool_type, block_number, block_number)
@@ -311,6 +313,7 @@ class QuickSwapAdapter:
                     self.cache.put_token(token0)
                     self.cache.put_token(token1)
                     processed += 1
-                except (KeyError, TypeError, ValueError, RuntimeError):
+                except (KeyError, TypeError, ValueError, RuntimeError) as exc:
+                    self.rejections.append({"pool_type": pool_type, "reason": str(exc), "block_number": block_number})
                     continue
         return processed
