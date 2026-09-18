@@ -222,3 +222,12 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - QuickSwap Polygon Algebra V3 factory: 0x411b0fAcC3489691f28ad58c47006AF5E3Ab3A28.
 - These are deployment anchors sourced from official QuickSwap documentation, not static pool lists.
 - Next gate: runtime eth_getCode/interface validation, event-topic verification and pool-creation discovery before an adapter becomes authoritative.
+
+
+## 2026-09-19 Runtime Deployment Verification Sync
+- Added `src/ghost_hunter/data_plane/deployment_verifier.py`.
+- Deployment activation now requires chain ID 137, non-empty `eth_getCode`, and documented read-only interface probes.
+- V2 requires `owner()` and `allPairsLength()`; Algebra V3 requires `owner()` after runtime code validation.
+- Failure is fail-closed: wrong chain, empty code or interface failure returns unverified evidence.
+- Corrected the Algebra V3 factory event signature to `Pool(address,address,address)` based on official QuickSwap documentation.
+- Topic0 activation remains blocked until canonical Ethereum Keccak-256 verification is available. No guessed hash was inserted.
