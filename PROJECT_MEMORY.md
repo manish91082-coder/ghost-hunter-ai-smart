@@ -315,3 +315,14 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - Screenshots, previous green runs, commit existence, or local reasoning cannot substitute for current-commit GitHub verification.
 - Canonical rule file: `GITHUB_STATE_VERIFICATION_GATE.md`.
 - Gate lock itself was validated: run #90 for the rule-file commit completed successfully; run #91 for the status-file commit also completed successfully.
+
+
+## 2026-09-19 — End-to-End QuickSwap Canonical Promotion Gate
+- Implemented canonical single-block QuickSwap promotion: scan -> decode -> quorum reconciliation -> exact-block pool/token state -> durable evidence -> cache promotion.
+- Cache promotion is delayed until persistence succeeds.
+- Execution-critical pool/token reads use provider-diverse quorum.
+- Adapter retains rejection reasons for forensic inspection.
+- CI caught an ABI fixture defect during the gate; it was corrected and the repaired commit passed.
+- Verified implementation baseline: `a97dce1f907c6bac7b043931763392c8114bf745`, Actions run #99 **SUCCESS**.
+- Status documentation commit `92a12a45c7df8c4be70d86b5c271d75596a63c73` was independently verified by Actions run #100 **SUCCESS**.
+- Next gate: connect canonical QuickSwap processing to head/reorg orchestration with explicit replay context and end-to-end restart/reorg replay tests.
