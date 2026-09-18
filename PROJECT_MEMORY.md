@@ -214,3 +214,11 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - Required actual WSS subscription confirmation for health.
 - Removed per-message processing time from WSS latency scoring.
 - Latest hardening CI was still in progress at sync time; no success claim made.
+
+
+## 2026-09-19 Verified Venue Manifest Sync
+- Added src/ghost_hunter/data_plane/protocols.py.
+- QuickSwap Polygon V2 factory: 0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32.
+- QuickSwap Polygon Algebra V3 factory: 0x411b0fAcC3489691f28ad58c47006AF5E3Ab3A28.
+- These are deployment anchors sourced from official QuickSwap documentation, not static pool lists.
+- Next gate: runtime eth_getCode/interface validation, event-topic verification and pool-creation discovery before an adapter becomes authoritative.
