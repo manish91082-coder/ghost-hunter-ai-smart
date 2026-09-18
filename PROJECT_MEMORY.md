@@ -6,81 +6,137 @@
 - Default branch: `main`
 - Repository ID: `1376339960`
 - Project working name: Ghost Hunter AI Smart
-- Domain/context: flash-loan / DeFi trading intelligence and research automation
-- Current repository baseline: newly created public repository with an initial README commit.
+- New project focus: Polygon PoS dynamic flash-loan arbitrage intelligence and controlled execution.
+- Legacy repositories are isolated and must not be modified.
 
 ## Governing Objective
-Build the project toward a production-grade, evidence-driven "Ghost Hunter" system that can research, detect, validate, simulate, audit, and eventually support controlled execution of flash-loan/arbitrage opportunities, subject to explicit safety, legal, financial, and technical constraints.
+Build a production-grade, evidence-driven, AI-assisted but deterministic-verifier-controlled system that continuously discovers Polygon PoS liquidity venues, pools, pairs, routes and flash-loan arbitrage opportunities.
 
-The project must not treat a theoretical opportunity as a real opportunity. Every claimed opportunity must pass evidence, market-state, liquidity, fee/gas, slippage, transaction-path, adversarial, and reproducibility checks appropriate to the stage.
+Economic eligibility gate:
+**Expected verified net profit must be strictly greater than USD 0.20 after all modeled execution costs.**
 
-## Operating Doctrine
-1. ChatGPT acts as Project Lead / Architect / Governance layer.
-2. GitHub is the durable source of project state.
-3. The repository itself is the handoff mechanism for another AI agent or human.
-4. No important project decision should exist only in chat when it can be recorded in the repository.
-5. Preserve an auditable history. Prefer additive commits and explicit status updates over silent edits.
-6. Never modify unrelated/legacy repositories for this project.
-7. The current project repository is the only repository authorized for this work unless the user explicitly changes that instruction.
-8. Do not claim completion without repository evidence, test evidence, or other verifiable evidence.
-9. When a project-driving conversation turn changes project state, update the project status and memory/log record in GitHub.
-10. Every future AI agent must read `PROJECT_MEMORY.md` and `PROJECT_STATUS.md` before making project changes.
+The $0.20 threshold is an execution eligibility policy, not a guarantee that every submitted transaction will realize profit.
 
-## Conversation-to-Repository Continuity
-The repository must preserve:
-- project goal and scope
-- architecture decisions
-- frozen/non-negotiable rules
-- phase progression
-- completed work
-- current work
-- blockers
-- test/validation evidence
-- important corrections
-- decisions made in chat that affect implementation
-- next action selected by the Project Lead
-- a concise chronological project log
+## Absolute Project Rules
+1. All market-dependent values must be dynamic.
+2. No static pair/pool list is authoritative.
+3. Discover and reconcile pools continuously from on-chain events/state plus trusted indexers/APIs.
+4. AI proposes; deterministic mathematics verifies; security policy authorizes; executor submits; independent reconciliation proves realized PnL.
+5. Never submit a candidate whose exact simulation fails.
+6. Never submit when required cost or state information is unknown.
+7. Never bypass the safety gate to force a trade.
+8. Never modify legacy repositories.
+9. Every project-driving response must update durable project state in GitHub.
+10. Every future AI agent must read PROJECT_STATUS.md and PROJECT_MEMORY.md before acting.
+11. The command `next` means inspect -> decide -> execute permitted next step -> validate -> persist state -> report.
+12. Historical chat claims never override current verified repository state.
 
-The repository files are a durable project memory, not a verbatim transcript of private chat. When a chat turn contains an important decision, convert it into a concise auditable record.
+## Profit Policy
+ExpectedNetUSD =
+GrossOutputUSD
+- PrincipalRepaymentUSD
+- FlashLoanFeeUSD
+- DEXFeesUSD
+- GasCostUSD
+- SlippageCostUSD
+- RouteCostUSD
+- ProtocolFeesUSD
+- SafetyReserveUSD
 
-## Current Historical Context
-Prior project work discussed in earlier project conversations included:
-- forensic analysis of flash-loan/arbitrage concepts
-- Ghost Hunter / PhantomX-related research and reports
-- phased repository-based implementation
-- end-to-end harness and validation work
-- repeated requests to verify actual GitHub state rather than relying on assumed state
-- an explicit requirement to speed up execution while maintaining evidence and audit discipline
-- the user instructed the Project Lead to continue the project step-by-step when the user says "next"
-- previous work used a separate development environment / IDE workflow in addition to GitHub
-- the current repository is intentionally a fresh public repository and is now the clean project home.
+Eligibility:
+**ExpectedNetUSD > 0.20**
 
-## Critical Continuity Rule
-If another AI agent takes over:
-1. Read `PROJECT_STATUS.md`.
-2. Read this file.
-3. Inspect the latest commits on `main`.
-4. Verify the actual repository state before deciding the next step.
-5. Do not infer completion from old chat claims.
-6. Continue from the latest verified state.
-7. Record the resulting state in GitHub.
+The calculation must be amount-specific and state-specific. Percentage spread alone is insufficient.
 
-## User Command Convention
-When the user sends only:
-`next`
-the Project Lead should:
-- inspect current repository state,
-- determine the highest-value next project step,
-- execute that step when tools/permissions permit,
-- validate it,
-- update the durable project state,
-- report exactly what changed and where,
-- identify the next logical step.
+## Zero-Gas-Loss Policy
+A reverted blockchain transaction can still consume gas, so literal post-submission zero gas loss cannot be mathematically guaranteed.
 
-## Safety / Integrity Boundary
-This memory records project governance and continuity. It does not authorize financial transactions, deployment of live capital, bypassing platform controls, or unsafe/illegal activity. Any future live-execution capability must have explicit controls, simulation/paper mode, transaction limits, verification, and user authorization.
+The engineering target is:
+- no submission without simulation
+- exact state-aware preflight
+- private transaction submission where supported
+- atomic execution
+- hard gas ceiling
+- native-balance floor
+- strict profitability invariant
+- automatic rejection under uncertainty
+- independent receipt and wallet-delta reconciliation
+
+## Dynamic Market Rule
+Dynamic inputs include:
+- block/state
+- gas
+- pool reserves/liquidity/ticks/weights
+- fee tiers
+- token behavior
+- flash-loan availability and fee
+- route costs
+- RPC/WSS latency
+- private submission health
+- wallet balance
+- competition/market conditions
+
+Adaptive Control (AC) may tune search and execution parameters within hard safety bounds, but cannot weaken the $0.20 gate, simulation requirement, security requirements, capital limits, or kill switch.
+
+## Polygon Research Baseline
+Current research indicates:
+- Aave V3 is deployed on Polygon and exposes permissionless protocol interaction; flash-loan availability must be checked dynamically per reserve and current configuration. citeturn0search2turn0search6
+- QuickSwap publishes Polygon V2/V3 deployment addresses and its V3 factory emits pool-creation events, supporting event-driven pool discovery. citeturn1search13turn1search14
+- Balancer documents Polygon deployment contracts and exposes chain-specific pool APIs, including all-pools retrieval for chain 137. citeturn3search4turn3search9
+- Uniswap's developer documentation exposes V3 subgraph entities including factory pool counts and pool state fields, but production truth should still be reconciled with on-chain state. citeturn3search7turn3search8
+- Current third-party Polygon pool snapshots show substantial fragmentation across Uniswap V4/V3/V2, QuickSwap V2/V3, Balancer, SushiSwap, Curve, KyberSwap and other venues. These counts are snapshots, not permanent truth. citeturn3search14
+- Polygon Private Mempool is documented by Polygon as a private transaction submission endpoint intended to protect transactions from frontrunning and sandwich attacks. It must be operationally verified before production use. citeturn1search0turn1search3
+- Polygon documentation/material indicates fast block production/finality; the engine must measure actual inter-block timing rather than hard-code a two-second assumption. citeturn2search8
+
+## Strategy Families Frozen for Initial Research
+- Cross-DEX two-leg arbitrage
+- V2/V3 and V3/V3 arbitrage
+- Concentrated-liquidity fee-tier arbitrage
+- Triangular arbitrage
+- Multi-hop cross-venue arbitrage
+- Stablecoin arbitrage
+- Curve stable/FX routes
+- Balancer weighted/composable routes
+- State-change/backrun candidates subject to security policy
+- ML/AI candidate ranking, never replacing deterministic verification
+
+## Agentic Roles
+The architecture defines specialized roles in `AGENT_ROLES.md`, including:
+Master Orchestrator, Polygon Chain Scout, Venue Discovery, Token Intelligence, Pool State, Route Graph, Strategy Generator, Exact Math, Economic Auditor, Simulation, Adversarial Security, MEV/Private Orderflow, Execution Guardian, Wallet/Capital Guardian, Receipt/PnL Auditor, Adaptive Control, Research Scientist, Evidence/Provenance, Regression, and Incident Response.
+
+## Repository Artifacts
+- PROJECT_MEMORY.md
+- PROJECT_STATUS.md
+- SYSTEM_BLUEPRINT.md
+- AGENT_ROLES.md
+- STRATEGY_CATALOG.md
+- DYNAMIC_ENGINE_SPEC.md
+
+## Continuity Protocol
+For every project-driving turn:
+1. Verify GitHub state.
+2. Read status and memory.
+3. Execute only the justified next step.
+4. Validate with evidence.
+5. Update status.
+6. Update memory when a durable rule/decision/context changes.
+7. Update relevant project specification files.
+8. Commit with a descriptive message.
+9. Report exact changed files/commits and evidence.
+
+## Wallet Constraint
+User reports approximately $5–$6 of Polygon-native balance. This is a constrained execution budget. It must not be treated as sufficient justification for live trading. Early phases remain discovery, simulation, shadow and controlled validation until evidence supports progression.
+
+## Historical Lessons Inherited
+Earlier Ghost Hunter work established that the following are production blockers unless independently proven:
+- synthetic/unproven V3 triangle opportunities
+- incomplete or unsafe executor paths
+- modeled PnL being mistaken for realized PnL
+- weak slippage/router/callback controls
+- unproven tuner causality
+These are audit requirements for the new project, not assumptions of correctness.
 
 ## Last Memory Sync
 - Date: 2026-09-19
 - Timezone: Asia/Kolkata (IST)
-- Sync reason: initialized durable project memory in the new public repository.
+- Reason: Polygon project scope, dynamic rule, agent architecture, strategy families, economic gate and current research baseline initialized.
