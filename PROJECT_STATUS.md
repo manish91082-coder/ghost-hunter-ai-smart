@@ -263,3 +263,11 @@ Next:
 - Added regression coverage for ABI string decoding and malformed empty responses.
 - This remains discovery/state infrastructure; no transaction execution path was introduced.
 - Next gate: make discovery replay/idempotence explicit and reconcile event-derived pools against factory `getPair`/`poolByPair` results before persistent storage.
+
+
+## 2026-09-19 — Reconciliation + Replay Integrity Gate
+- Added stable discovery candidate keys and cache-based idempotence checks.
+- Added a fail-closed `reconcile_candidate()` gate requiring the factory's direct pair lookup to match the event-derived pool address.
+- Added regression coverage for both matching and mismatching factory reconciliation and duplicate replay detection.
+- This prevents an event-only pool candidate from becoming normalized state without independent factory agreement.
+- Next gate: persistent discovery records with block hash/evidence, reorg rollback/replay, and stronger multi-provider reconciliation for execution-critical state.
