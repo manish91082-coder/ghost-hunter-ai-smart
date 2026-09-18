@@ -280,3 +280,11 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - Added `CanonicalCoordinator` to rewind durable evidence at the fork range and request an overlap rescan before replacement-chain replay.
 - Added regression tests for fork handling and same-head idempotence.
 - Next: integrate canonical coordination into the head/discovery orchestrator and add provider-diverse reconciliation.
+
+
+## 2026-09-19 Provider-Diverse Canonical Coordination Sync
+- Critical quorum reads now require distinct provider families, preventing two endpoints from the same infrastructure family from masquerading as independent consensus.
+- Provider family is explicit when configured, otherwise derived from endpoint hostname.
+- Canonical coordinator and durable discovery store are now constructed by the data-plane orchestrator and invoked for each observed head.
+- Existing head-handler API was preserved after verification to avoid an integration regression.
+- Next: persist protocol discovery records directly from verified event processing and require diverse quorum for execution-critical pool/token reads.
