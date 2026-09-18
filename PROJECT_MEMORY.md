@@ -264,3 +264,12 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - Added fail-closed factory reconciliation: event-derived pool address must equal the factory's direct pair lookup result.
 - Added regression tests for agreement, disagreement and duplicate replay.
 - Persistent block-hash/evidence records and multi-provider reconciliation remain future gates.
+
+
+## 2026-09-19 Durable Discovery Evidence + Reorg Sync
+- Added a zero-cost SQLite-backed `DiscoveryStore` for durable pool-discovery/evidence records.
+- Canonical discoveries are anchored to block number + block hash; missing or mismatched anchors fail closed.
+- Replay is idempotent by candidate key and payload-hash integrity is enforced.
+- Reorg handling marks discoveries at/after a replaced block height as orphaned and allows replacement-chain replay after the new block is recorded.
+- Added restart, replay, payload-integrity and block-hash replacement regression tests.
+- Next: wire the store into the discovery orchestrator and strengthen provider-diverse canonical reconciliation.
