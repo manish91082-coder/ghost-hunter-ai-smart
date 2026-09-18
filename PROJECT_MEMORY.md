@@ -124,6 +124,9 @@ For every project-driving turn:
 8. Commit with a descriptive message.
 9. Report exact changed files/commits and evidence.
 
+## Zero-Cost Resource Rule
+**ZERO-COST-FIRST is now a non-negotiable project constraint.** Core development, research, discovery, simulation, testing and shadow-mode operation must be possible with open-source/local/free-tier resources. No paid SaaS, paid AI, paid RPC, paid database or paid cloud is a mandatory dependency. Provider abstraction and fallbacks are mandatory. See ZERO_COST_ARCHITECTURE.md.
+
 ## Wallet Constraint
 User reports approximately $5–$6 of Polygon-native balance. This is a constrained execution budget. It must not be treated as sufficient justification for live trading. Early phases remain discovery, simulation, shadow and controlled validation until evidence supports progression.
 
@@ -139,4 +142,4 @@ These are audit requirements for the new project, not assumptions of correctness
 ## Last Memory Sync
 - Date: 2026-09-19
 - Timezone: Asia/Kolkata (IST)
-- Reason: Polygon project scope, dynamic rule, agent architecture, strategy families, economic gate and current research baseline initialized.
+- Reason: Polygon project scope plus the zero-cost-first resource policy was frozen and recorded.
