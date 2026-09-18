@@ -248,3 +248,11 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - Added factory reconciliation calls for V2 `getPair` and Algebra `poolByPair`.
 - Added scanner integration and regression tests for wrong emitter/topic, zero pool and factory mismatch.
 - No static pool inventory and no live transaction execution were introduced.
+
+
+## 2026-09-19 Token Metadata Normalization Sync
+- QuickSwap token discovery now normalizes standard ABI-encoded `name()` and `symbol()` strings instead of storing raw ABI payloads.
+- `decimals()` remains mandatory for math readiness and is bounded to uint8-compatible values.
+- Runtime token bytecode is hashed for identity/change detection.
+- Non-standard optional metadata is fail-soft; missing material state still blocks downstream math.
+- Added regression coverage for dynamic ABI string decoding.
