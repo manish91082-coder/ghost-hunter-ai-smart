@@ -16,12 +16,12 @@ EVENTS = {
     "v2_pair_created": EventTopic(
         "PairCreated",
         "PairCreated(address,address,address,uint256)",
-        "",
+        "0x0d3648bd0f6ba80134a33ba9275ac585d9d315f0ad8355cddefde31afa28d0e9",
     ),
     "v3_pool_created": EventTopic(
         "PoolCreated",
         "Pool(address,address,address)",
-        "",
+        "0x91ccaa7a278130b65168c3a0c8d3bcae84cf5e43704342bd3ec0b59e59c036db",
     ),
     "balancer_pool_registered": EventTopic(
         "PoolRegistered",
