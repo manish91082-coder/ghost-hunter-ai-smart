@@ -174,6 +174,29 @@ class DiscoveryStore:
         ).fetchone()
         return row["hash"] if row else None
 
+    def latest_canonical_head(self) -> tuple[int, str, str] | None:
+        """Return the latest contiguous canonical block, failing closed on gaps."""
+        row = self._db.execute(
+            """
+            SELECT number,hash,parent_hash
+            FROM blocks
+            WHERE canonical=1
+            ORDER BY number DESC
+            LIMIT 1
+            """
+        ).fetchone()
+        if not row:
+            return None
+        number = int(row["number"])
+        if number > 0:
+            previous = self._db.execute(
+                "SELECT hash FROM blocks WHERE number=? AND canonical=1",
+                (number - 1,),
+            ).fetchone()
+            if not previous or previous["hash"] != row["parent_hash"]:
+                raise RuntimeError("durable canonical chain is inconsistent")
+        return number, row["hash"], row["parent_hash"]
+
     def get(self, candidate_key: str) -> DiscoveryRecord | None:
         row = self._db.execute(
             """
