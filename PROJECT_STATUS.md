@@ -5,7 +5,7 @@
 ### Verification Doctrine
 **ZERO-DRIFT / MULTI-PASS VERIFICATION IS FROZEN.** Every implementation step must be audited repeatedly before being treated as complete. The target is 100 independent checks/passes where practical; this means repeated static inspection, invariant review, regression tests, failure-path tests, integration checks and re-audit, not a claim that one identical test was blindly executed 100 times. No step is promoted to execution merely because it passes once. Any discovered defect sends the step back to correction and re-verification.
 
-**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE + AUTONOMOUS RPC FLEET UPGRADE IMPLEMENTED; VERIFIED PROTOCOL ADAPTER ACTIVATION IS NEXT**
+**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE HARDENING ACTIVE; VERIFIED PROTOCOL ADAPTER ACTIVATION REMAINS NEXT**
 
 ## Repository
 - `manish91082-coder/ghost-hunter-ai-smart`
@@ -47,6 +47,8 @@ Build a dynamic Polygon PoS flash-loan arbitrage system that:
 - [x] Endpoint retention with no automatic deletion
 - [x] Concurrent fleet health probes and automatic recovery
 - [x] RPC fleet scoring by latency/failure/staleness
+- [x] Reference-head block-lag detection with quarantine threshold
+- [x] Secret-redacted fleet registry snapshot
 - [x] Autonomous multi-RPC fleet governance policy frozen
 - [x] Batch JSON-RPC support
 - [x] Multi-provider quorum read primitive
@@ -110,6 +112,8 @@ Live execution remains disabled in this phase. No transaction signer/executor ha
 **IN PROGRESS**
 Completed this step:
 - autonomous many-RPC fleet manager upgrade
+- reference-head lag classification and retained quarantine
+- secret-redacted fleet registry snapshot
 - adaptive log scanner
 - verified event-topic boundary
 - reorg guard
@@ -165,6 +169,14 @@ Next:
 - RPCs are retained when unhealthy; runtime uses cooldown/quarantine/probation and automatic recovery probes instead of deletion.
 - Routine provider switching is explicitly no-manual-work.
 - Next: persistent RPC/WSS fleet metrics and registry, then verified protocol adapters and deployment discovery, with multi-pass verification at each gate.
+
+### 2026-09-19 — RPC/WSS Hardening Pass
+- Removed score-order round-robin side effects; provider ordering is deterministic and score-driven.
+- Health probes now compare successful provider heads against the freshest observed head and classify configurable lag.
+- Registry snapshots redact URL query strings to avoid exposing query-based API keys.
+- WSS probes now require JSON-RPC subscription confirmation.
+- WSS head messages no longer distort network-latency EWMA.
+- Hardening CI was triggered; latest relevant run remains in progress, so success is not yet claimed.
 
 ### 2026-09-19 — Verification Doctrine + RPC/WSS Audit
 - User requirement locked: every project step must be repeatedly checked, tested and audited before promotion, with a target of 100 independent verification passes where practical.
