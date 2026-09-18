@@ -19,7 +19,7 @@ def test_reorg_guard_detects_parent_mismatch():
     g = ReorgGuard()
     assert g.accept(CanonicalHead(10, "h10", "h9"))
     assert not g.accept(CanonicalHead(11, "fork11", "different"))
-    assert g.rescan_start(11, 12) == 0
+    assert g.rescan_start(11) == 0
 
 
 def test_discovery_venues_are_deduplicated():
