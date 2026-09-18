@@ -5,7 +5,7 @@
 ### Verification Doctrine
 **ZERO-DRIFT / MULTI-PASS VERIFICATION IS FROZEN.** Every implementation step must be audited repeatedly before being treated as complete. The target is 100 independent checks/passes where practical; this means repeated static inspection, invariant review, regression tests, failure-path tests, integration checks and re-audit, not a claim that one identical test was blindly executed 100 times. No step is promoted to execution merely because it passes once. Any discovered defect sends the step back to correction and re-verification.
 
-**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE HARDENING ACTIVE; QUICKSWAP EVENT TOPICS + FAIL-CLOSED DECODERS ACTIVE; SCANNER INTEGRATION ACTIVE**
+**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE HARDENING ACTIVE; QUICKSWAP DISCOVERY ACTIVE; DURABLE EVIDENCE/REORG STORE ACTIVE**
 
 ## Repository
 - `manish91082-coder/ghost-hunter-ai-smart`
@@ -71,6 +71,10 @@ Build a dynamic Polygon PoS flash-loan arbitrage system that:
 - [x] Runtime deployment verifier with chain/code/interface hard gates
 - [x] QuickSwap Algebra event signature corrected to documented `Pool(address,address,address)`
 - [x] Canonical Keccak topic0 activation
+- [x] Durable SQLite discovery/evidence store
+- [x] Canonical block-hash anchoring for discoveries
+- [x] Idempotent replay with payload-hash integrity
+- [x] Reorg rollback/orphan marking and replacement-chain replay
 
 ## Important Design Correction
 WSS/polling is an acceleration path, not canonical truth. A new-head event must trigger immediate downstream work, while execution-critical state is re-read/reconciled before authorization.
@@ -270,4 +274,13 @@ Next:
 - Added a fail-closed `reconcile_candidate()` gate requiring the factory's direct pair lookup to match the event-derived pool address.
 - Added regression coverage for both matching and mismatching factory reconciliation and duplicate replay detection.
 - This prevents an event-only pool candidate from becoming normalized state without independent factory agreement.
-- Next gate: persistent discovery records with block hash/evidence, reorg rollback/replay, and stronger multi-provider reconciliation for execution-critical state.
+- Next gate: integrate the durable store into the live discovery orchestrator, add explicit block ancestry/reorg replay coordination, and strengthen provider-diverse reconciliation for execution-critical state.
+
+
+## 2026-09-19 — Durable Discovery Evidence + Reorg Gate
+- Added `src/ghost_hunter/data_plane/store.py` using Python standard-library SQLite, preserving the zero-cost-first constraint.
+- Discovery records now require a canonical block number + block hash anchor before persistence; unanchored evidence is rejected.
+- Candidate keys provide durable idempotence across process restarts. A replay with a changed payload hash fails closed.
+- Block-hash replacement at a fork point automatically orphans discoveries at/after that height; replacement-chain discoveries can then be replayed against the new canonical block hash.
+- Added tests for missing block hash, restart persistence, duplicate replay, payload mutation, explicit rewind, replacement block hash and orphan status.
+- No transaction signer, private key, or live execution path was added.
