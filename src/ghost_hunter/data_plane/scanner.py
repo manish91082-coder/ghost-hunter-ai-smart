@@ -53,6 +53,23 @@ class AdaptiveLogScanner:
         return out
 
 
+async def scan_and_decode_pool_events(
+    scanner: AdaptiveLogScanner,
+    query: LogQuery,
+    adapter: Any,
+) -> list[Any]:
+    """Scan only the requested factory/topic range and fail closed per log."""
+    logs = await scanner.scan(query)
+    decoded: list[Any] = []
+    for log in logs:
+        try:
+            block_number = int(str(log.get("blockNumber", "0x0")), 16)
+            decoded.append(adapter.decode_log(adapter.pool_type, log))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return decoded
+
+
 class PoolDiscoveryAdapter:
     """Normalizes verified factory event logs into PoolState records.
 
