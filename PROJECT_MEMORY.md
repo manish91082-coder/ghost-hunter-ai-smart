@@ -273,3 +273,10 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - Reorg handling marks discoveries at/after a replaced block height as orphaned and allows replacement-chain replay after the new block is recorded.
 - Added restart, replay, payload-integrity and block-hash replacement regression tests.
 - Next: wire the store into the discovery orchestrator and strengthen provider-diverse canonical reconciliation.
+
+
+## 2026-09-19 Canonical Ancestry Coordinator Sync
+- Reorg detection now preserves the last canonical head on discontinuity instead of silently replacing it.
+- Added `CanonicalCoordinator` to rewind durable evidence at the fork range and request an overlap rescan before replacement-chain replay.
+- Added regression tests for fork handling and same-head idempotence.
+- Next: integrate canonical coordination into the head/discovery orchestrator and add provider-diverse reconciliation.
