@@ -11,6 +11,13 @@ from .reorg import CanonicalCoordinator, CanonicalHead
 from .store import DiscoveryStore
 
 
+@dataclass(frozen=True)
+class HeadContext:
+    block: object
+    accepted: bool
+    replay_start: int | None
+
+
 @dataclass
 class DataPlane:
     rpc: MultiRPC
@@ -35,8 +42,19 @@ class DataPlane:
     async def run_heads(self, handler, poll_interval: float = 0.25) -> None:
         await self.bootstrap()
         async for block in self.chain.head_poll(poll_interval):
-            self.canonical.observe(CanonicalHead(block.number, block.hash, block.parent_hash))
+            accepted, replay_start = self.canonical.observe(
+                CanonicalHead(block.number, block.hash, block.parent_hash)
+            )
             await handler(block)
+
+    async def run_heads_context(self, handler, poll_interval: float = 0.25) -> None:
+        """Run heads while explicitly propagating canonical/replay decisions."""
+        await self.bootstrap()
+        async for block in self.chain.head_poll(poll_interval):
+            accepted, replay_start = self.canonical.observe(
+                CanonicalHead(block.number, block.hash, block.parent_hash)
+            )
+            await handler(HeadContext(block=block, accepted=accepted, replay_start=replay_start))
 
     async def critical_read(self, method: str, params: list | None = None, quorum: int = 2) -> object:
         return await self.rpc.quorum_call(method, params, quorum=quorum)
