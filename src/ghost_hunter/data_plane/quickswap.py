@@ -142,11 +142,11 @@ class QuickSwapAdapter:
         except (ValueError, UnicodeDecodeError):
             return None
         return None
-    async def _token_state(self, address: str, block_number: int) -> TokenState:
-        code = await self.rpc.call("eth_getCode", [address, hex(block_number)])
+    async def _token_state(self, address: str, block_number: int, *, promote_cache: bool = True) -> TokenState:
+        code = await self.rpc.quorum_call("eth_getCode", [address, hex(block_number)], quorum=2)
         if not isinstance(code, str) or len(code) <= 2:
             raise ValueError("token has no runtime code")
-        decimals = _uint(await self.rpc.call("eth_call", [{"to": address, "data": DECIMALS_SELECTOR}, hex(block_number)]))
+        decimals = _uint(await self.rpc.quorum_call("eth_call", [{"to": address, "data": DECIMALS_SELECTOR}, hex(block_number)], quorum=2))
         if decimals > 255:
             raise ValueError("token decimals out of bounds")
         symbol = None
@@ -154,19 +154,19 @@ class QuickSwapAdapter:
         total_supply = None
         try:
             symbol = self._decode_string(
-                await self.rpc.call("eth_call", [{"to": address, "data": SYMBOL_SELECTOR}, hex(block_number)])
+                await self.rpc.quorum_call("eth_call", [{"to": address, "data": SYMBOL_SELECTOR}, hex(block_number)], quorum=2)
             )
         except Exception:
             pass
         try:
             name = self._decode_string(
-                await self.rpc.call("eth_call", [{"to": address, "data": NAME_SELECTOR}, hex(block_number)])
+                await self.rpc.quorum_call("eth_call", [{"to": address, "data": NAME_SELECTOR}, hex(block_number)], quorum=2)
             )
         except Exception:
             pass
         try:
             total_supply = _uint(
-                await self.rpc.call("eth_call", [{"to": address, "data": TOTAL_SUPPLY_SELECTOR}, hex(block_number)])
+                await self.rpc.quorum_call("eth_call", [{"to": address, "data": TOTAL_SUPPLY_SELECTOR}, hex(block_number)], quorum=2)
             )
         except Exception:
             pass
@@ -180,19 +180,20 @@ class QuickSwapAdapter:
             source="quickswap_direct",
             confidence=1.0,
         )
-        self.cache.put_token(token)
+        if promote_cache:
+            self.cache.put_token(token)
         return token
 
-    async def read_pool_state(self, candidate: DiscoveryCandidate) -> PoolState:
+    async def read_pool_state(self, candidate: DiscoveryCandidate, *, promote_cache: bool = True) -> PoolState:
         pool = candidate.created.pool
         block_tag = hex(candidate.block_number)
-        code = await self.rpc.call("eth_getCode", [pool, block_tag])
+        code = await self.rpc.quorum_call("eth_getCode", [pool, block_tag], quorum=2)
         if not isinstance(code, str) or len(code) <= 2:
             raise ValueError("pool has no runtime code")
 
-        factory = _address(await self.rpc.call("eth_call", [{"to": pool, "data": FACTORY_SELECTOR}, block_tag]))
-        token0 = _address(await self.rpc.call("eth_call", [{"to": pool, "data": TOKEN0_SELECTOR}, block_tag]))
-        token1 = _address(await self.rpc.call("eth_call", [{"to": pool, "data": TOKEN1_SELECTOR}, block_tag]))
+        factory = _address(await self.rpc.quorum_call("eth_call", [{"to": pool, "data": FACTORY_SELECTOR}, block_tag], quorum=2))
+        token0 = _address(await self.rpc.quorum_call("eth_call", [{"to": pool, "data": TOKEN0_SELECTOR}, block_tag], quorum=2))
+        token1 = _address(await self.rpc.quorum_call("eth_call", [{"to": pool, "data": TOKEN1_SELECTOR}, block_tag], quorum=2))
         if factory.lower() != candidate.created.factory.lower():
             raise ValueError("pool factory mismatch")
         if token0.lower() != candidate.created.token0.lower() or token1.lower() != candidate.created.token1.lower():
@@ -207,14 +208,14 @@ class QuickSwapAdapter:
             "code_hash": StateCache.digest(code),
         }
         if candidate.created.pool_type == "v2":
-            reserves = _hex(await self.rpc.call("eth_call", [{"to": pool, "data": RESERVES_SELECTOR}, block_tag]))
+            reserves = _hex(await self.rpc.quorum_call("eth_call", [{"to": pool, "data": RESERVES_SELECTOR}, block_tag], quorum=2))
             if len(reserves) < 194:
                 raise ValueError("invalid V2 reserves ABI result")
             state["reserve0"] = int(reserves[2:66], 16)
             state["reserve1"] = int(reserves[66:130], 16)
             state["reserve_timestamp"] = int(reserves[130:194], 16)
         elif candidate.created.pool_type == "algebra_v3":
-            global_state = _hex(await self.rpc.call("eth_call", [{"to": pool, "data": GLOBAL_STATE_SELECTOR}, block_tag]))
+            global_state = _hex(await self.rpc.quorum_call("eth_call", [{"to": pool, "data": GLOBAL_STATE_SELECTOR}, block_tag], quorum=2))
             if len(global_state) < 66:
                 raise ValueError("invalid Algebra globalState result")
             state["global_state_raw"] = global_state
@@ -233,7 +234,8 @@ class QuickSwapAdapter:
             source="quickswap_direct",
             confidence=1.0,
         )
-        self.cache.put_pool(pool_state)
+        if promote_cache:
+            self.cache.put_pool(pool_state)
         return pool_state
 
     def candidate_key(self, candidate: DiscoveryCandidate) -> tuple[str, str, str, int]:
