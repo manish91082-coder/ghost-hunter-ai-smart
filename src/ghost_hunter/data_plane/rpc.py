@@ -29,6 +29,7 @@ class RPCProvider:
     rate_limited_until: float = 0.0
     state: str = "active"
     capabilities: set[str] = field(default_factory=set)
+    provider_family: str | None = None
 
     @property
     def healthy(self) -> bool:
@@ -150,12 +151,33 @@ class MultiRPC:
             results.extend(chunk_result)
         return results
 
+    @staticmethod
+    def _provider_family(provider: RPCProvider) -> str:
+        if provider.provider_family:
+            return provider.provider_family
+        return urlsplit(provider.url).netloc.lower()
+
+    def _quorum_providers(self, capability: str | None, quorum: int) -> list[RPCProvider]:
+        if quorum < 1:
+            raise ValueError("quorum must be positive")
+        selected: list[RPCProvider] = []
+        families: set[str] = set()
+        for provider in self._ordered(capability):
+            family = self._provider_family(provider)
+            if family in families:
+                continue
+            selected.append(provider)
+            families.add(family)
+            if len(selected) >= quorum:
+                return selected
+        raise RPCError("insufficient provider diversity for quorum")
+
     async def quorum_call(self, method: str, params: list[Any] | None = None, quorum: int = 2, *, capability: str | None = None) -> Any:
-        providers = self._ordered(capability)[:max(quorum, 1)]
+        providers = self._quorum_providers(capability, quorum)
         values = await asyncio.gather(*(self._post(p, {"jsonrpc": "2.0", "id": i + 1, "method": method, "params": params or []}) for i, p in enumerate(providers)), return_exceptions=True)
         good = [v.get("result") for v in values if isinstance(v, dict) and "result" in v]
-        if not good:
-            raise RPCError("quorum read returned no successful results")
+        if len(good) < quorum:
+            raise RPCError(f"quorum read did not obtain {quorum} successful provider results")
         if len(set(map(str, good))) != 1:
             raise RPCError(f"provider disagreement for {method}")
         return good[0]
