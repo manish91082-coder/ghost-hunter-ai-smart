@@ -1,7 +1,7 @@
 # PROJECT STATUS
 
 ## STATUS
-**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE + DISCOVERY PRIMITIVES IMPLEMENTED; VERIFIED PROTOCOL ADAPTER ACTIVATION IS NEXT**
+**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE + AUTONOMOUS RPC FLEET UPGRADE IMPLEMENTED; VERIFIED PROTOCOL ADAPTER ACTIVATION IS NEXT**
 
 ## Repository
 - `manish91082-coder/ghost-hunter-ai-smart`
@@ -38,6 +38,11 @@ Build a dynamic Polygon PoS flash-loan arbitrage system that:
 ### P1 data-plane skeleton
 - [x] Async multi-RPC provider abstraction
 - [x] RPC health/failover and cooldown
+- [x] Autonomous capability-aware RPC selection
+- [x] Rate-limit-aware cooldown
+- [x] Endpoint retention with no automatic deletion
+- [x] Concurrent fleet health probes and automatic recovery
+- [x] RPC fleet scoring by latency/failure/staleness
 - [x] Autonomous multi-RPC fleet governance policy frozen
 - [x] Batch JSON-RPC support
 - [x] Multi-provider quorum read primitive
@@ -100,6 +105,7 @@ Live execution remains disabled in this phase. No transaction signer/executor ha
 ### P1 — Polygon Data Plane
 **IN PROGRESS**
 Completed this step:
+- autonomous many-RPC fleet manager upgrade
 - adaptive log scanner
 - verified event-topic boundary
 - reorg guard
@@ -154,7 +160,14 @@ Next:
 - Frozen many-RPC/many-WSS architecture with automatic rotation and provider-diverse quorum.
 - RPCs are retained when unhealthy; runtime uses cooldown/quarantine/probation and automatic recovery probes instead of deletion.
 - Routine provider switching is explicitly no-manual-work.
-- Next RPC implementation upgrade: capability-aware health scoring, block-lag/rate-limit detection, background recovery probes and WSS fleet rotation.
+- Next: WSS fleet rotation, persistent RPC metrics/registry, verified protocol adapters and deployment discovery.
+
+### 2026-09-19 — Autonomous RPC Fleet Runtime Upgrade
+- Upgraded `MultiRPC` into an autonomous fleet manager with capability-aware routing and health scoring.
+- Added rate-limit-aware cooldown, endpoint retention, concurrent recovery probes and automatic restoration.
+- Failed/slow/rate-limited endpoints remain registered and are never automatically deleted.
+- Added fleet registry snapshots for future persistent metrics/state storage.
+- Added regression tests locking the no-delete rule.
 
 ### 2026-09-19 — P1 Discovery Runtime
 - Added adaptive log scanning with range shrink/expand.
