@@ -5,7 +5,7 @@
 ### Verification Doctrine
 **ZERO-DRIFT / MULTI-PASS VERIFICATION IS FROZEN.** Every implementation step must be audited repeatedly before being treated as complete. The target is 100 independent checks/passes where practical; this means repeated static inspection, invariant review, regression tests, failure-path tests, integration checks and re-audit, not a claim that one identical test was blindly executed 100 times. No step is promoted to execution merely because it passes once. Any discovered defect sends the step back to correction and re-verification.
 
-**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE HARDENING ACTIVE; QUICKSWAP DISCOVERY ACTIVE; DURABLE EVIDENCE/REORG STORE ACTIVE**
+**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE HARDENING ACTIVE; QUICKSWAP DISCOVERY ACTIVE; DURABLE EVIDENCE/REORG + PROVIDER-DIVERSE CANONICAL COORDINATION ACTIVE**
 
 ## Repository
 - `manish91082-coder/ghost-hunter-ai-smart`
@@ -76,6 +76,8 @@ Build a dynamic Polygon PoS flash-loan arbitrage system that:
 - [x] Idempotent replay with payload-hash integrity
 - [x] Reorg rollback/orphan marking and replacement-chain replay
 - [x] Canonical ancestry coordinator with overlap-rescan trigger
+- [x] Provider-diverse quorum selection for critical reads
+- [x] Durable store wired into head orchestration
 
 ## Important Design Correction
 WSS/polling is an acceleration path, not canonical truth. A new-head event must trigger immediate downstream work, while execution-critical state is re-read/reconciled before authorization.
@@ -275,7 +277,7 @@ Next:
 - Added a fail-closed `reconcile_candidate()` gate requiring the factory's direct pair lookup to match the event-derived pool address.
 - Added regression coverage for both matching and mismatching factory reconciliation and duplicate replay detection.
 - This prevents an event-only pool candidate from becoming normalized state without independent factory agreement.
-- Next gate: wire canonical coordination into the head/discovery orchestrator and strengthen provider-diverse reconciliation for execution-critical state.
+- Next gate: wire persisted discovery records into protocol event processing and require provider-diverse reconciliation for pool/token execution-critical reads.
 
 
 ## 2026-09-19 — Durable Discovery Evidence + Reorg Gate
@@ -291,4 +293,13 @@ Next:
 - Hardened `ReorgGuard` so discontinuous/forked heads do not overwrite the last known canonical head.
 - Added `CanonicalCoordinator` to couple ancestry validation with durable SQLite evidence and trigger overlap replay after a discontinuity.
 - Added regression tests for non-advancing fork detection, durable rewind/replay and same-head idempotence.
+- No live execution path was introduced.
+
+
+## 2026-09-19 — Provider-Diverse Canonical Coordination Gate
+- Hardened `MultiRPC.quorum_call()` to select distinct provider families rather than multiple endpoints from one provider family.
+- Quorum now fails closed when the requested number of distinct provider families is unavailable or when fewer than quorum successful results agree.
+- Added `provider_family` metadata with hostname fallback, preserving autonomous endpoint retention/rotation.
+- Wired `CanonicalCoordinator` + durable `DiscoveryStore` into `DataPlane.run_heads()`; existing head-handler signature is preserved.
+- Added regression tests for provider-family diversity and insufficient diversity.
 - No live execution path was introduced.
