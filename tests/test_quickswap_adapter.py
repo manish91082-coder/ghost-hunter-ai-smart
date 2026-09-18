@@ -187,3 +187,41 @@ def test_persist_candidate_requires_canonical_block_evidence():
         store.record_block(10, "h10", "h9")
         assert adapter.persist_candidate(candidate, store, {"pool": pool})
         assert not adapter.persist_candidate(candidate, store, {"pool": pool})
+
+@pytest.mark.asyncio
+async def test_process_block_persists_before_cache_promotion():
+    from ghost_hunter.data_plane.scanner import AdaptiveLogScanner
+    from ghost_hunter.data_plane.store import DiscoveryStore
+
+    token0, token1, pool = "0x" + "1" * 40, "0x" + "2" * 40, "0x" + "3" * 40
+    log = {
+        "address": V2_FACTORY,
+        "topics": [EVENTS["v2_pair_created"].topic0, topic(token0), topic(token1)],
+        "data": "0x" + word(pool) + f"{7:064x}",
+        "blockNumber": "0x10",
+        "blockHash": "h10",
+        "transactionHash": "0xtx",
+        "logIndex": "0x1",
+    }
+    adapter = make_adapter()
+    adapter.rpc.pair_result = "0x" + word(pool)
+    adapter.rpc.values[("eth_call", pool, "0xc45a0155")] = "0x" + word(V2_FACTORY)
+    adapter.rpc.values[("eth_call", pool, "0x0dfe1681")] = "0x" + word(token0)
+    adapter.rpc.values[("eth_call", pool, "0xd21220a7")] = "0x" + word(token1)
+    adapter.rpc.values[("eth_call", pool, "0x0902f1ac")] = "0x" + "0" * 128 + "0" * 64
+    adapter.rpc.values[("eth_call", token0, "0x313ce567")] = f"{18:064x}"
+    adapter.rpc.values[("eth_call", token1, "0x313ce567")] = f"{6:064x}"
+
+    scanner = AdaptiveLogScanner(adapter.rpc, initial_range=1, min_range=1, max_range=1)
+    scanner.rpc.logs = [log] if hasattr(scanner.rpc, "logs") else None
+    async def scan(query):
+        return [log] if query.from_block == 16 and query.to_block == 16 else []
+    scanner.scan = scan
+
+    with DiscoveryStore() as store:
+        store.record_block(16, "h10", "h9")
+        assert await adapter.process_block(scanner, store, 16) == 1
+        assert len(store.canonical_records()) == 1
+        assert pool.lower() in adapter.cache.pools
+        assert token0.lower() in adapter.cache.tokens
+        assert token1.lower() in adapter.cache.tokens
