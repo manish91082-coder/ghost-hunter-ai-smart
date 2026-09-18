@@ -119,16 +119,16 @@ class DiscoveryStore:
         if not block or block["hash"] != record.block_hash:
             raise ValueError("discovery is not anchored to a canonical block")
         computed = self.payload_hash(payload)
-        if computed != record.payload_hash:
-            raise ValueError("payload hash mismatch")
         existing = self._db.execute(
             "SELECT payload_hash,status FROM discoveries WHERE candidate_key=?",
             (record.candidate_key,),
         ).fetchone()
         if existing:
-            if existing["payload_hash"] != record.payload_hash:
+            if existing["payload_hash"] != computed or computed != record.payload_hash:
                 raise ValueError("candidate replay payload mismatch")
             return False
+        if computed != record.payload_hash:
+            raise ValueError("payload hash mismatch")
         self._db.execute(
             """
             INSERT INTO discoveries(
