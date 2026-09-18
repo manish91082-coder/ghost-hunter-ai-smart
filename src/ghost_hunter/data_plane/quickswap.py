@@ -254,9 +254,10 @@ class QuickSwapAdapter:
             selector = POOL_BY_PAIR_SELECTOR
         else:
             raise ValueError("unsupported QuickSwap pool type")
-        raw = await self.rpc.call(
+        raw = await self.rpc.quorum_call(
             "eth_call",
             [{"to": deployment.factory, "data": selector + _abi_word(token0)[2:] + _abi_word(token1)[2:]}, hex(block_number)],
+            quorum=2,
         )
         pool = _address(raw)
         if _is_zero(pool):
