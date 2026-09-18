@@ -32,6 +32,9 @@ This threshold is not a guarantee of realized profit.
 10. ZERO-COST-FIRST is mandatory.
 11. `next` means inspect -> decide -> execute -> validate -> persist -> report.
 12. Every project-driving turn updates durable GitHub state.
+13. RPC/WSS infrastructure is a large autonomous fleet, not a primary/backup pair.
+14. Never auto-delete an RPC merely because it fails, rate-limits, blocks, lags or becomes slow. Retain it and use health-state rotation, cooldown/quarantine, probes and automatic recovery.
+15. Routine RPC selection/failover/recovery requires no manual switching.
 
 ## Self-Decision Architecture
 The eventual runtime is designed as a closed control loop:
@@ -53,6 +56,19 @@ OBSERVE
 -> ADAPT
 
 No human decision is required for ordinary runtime candidate selection. Human/governance control remains the owner of hard policy, capital limits, emergency stop and deployment approval.
+
+## Autonomous RPC Fleet
+- many HTTP RPC and WSS endpoints are supported concurrently
+- provider-agnostic persistent endpoint registry
+- health/latency/freshness/rate-limit/capability scoring
+- automatic rotation and load balancing
+- cooldown/quarantine/probation rather than deletion
+- automatic background recovery probes and restoration
+- provider-diverse quorum for execution-critical reads
+- WSS and HTTP fleets independently rotated
+- new endpoints enter probation before becoming trusted execution sources
+- provider terms/quotas are respected; rotation is resilience, not quota evasion
+- full policy: `RPC_FLEET_POLICY.md`
 
 ## Low-Latency Architecture
 Use:
@@ -170,4 +186,4 @@ Approximately $5-$6 POL is treated as constrained future validation capital. It 
 
 ## Last Memory Sync
 2026-09-19 | Asia/Kolkata
-Reason: P1 data-plane implementation skeleton completed with low-latency WSS, async/batched multi-RPC, normalized state models, cache, discovery boundary and CI. Next is real protocol event/pool discovery.
+Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints are retained and automatically rotated/cooldown-probed/restored; routine provider management is no-manual-work. Next implementation upgrade adds capability-aware health scoring, block-lag/rate-limit detection, recovery probes and WSS fleet rotation before/alongside verified protocol adapters.
