@@ -114,18 +114,3 @@ class PolygonWSS:
                 except Exception as exc:
                     provider.record(False, (time.perf_counter() - started) * 1000)
                     return {"name": provider.name, "state": provider.state, "ok": False, "error": str(exc)}
-
-    async def probe_all(self) -> list[dict[str, object]]:
-        sem = asyncio.Semaphore(min(8, len(self.providers)))
-        async def probe(provider: WSSProvider) -> dict[str, object]:
-            async with sem:
-                started = time.perf_counter()
-                try:
-                    async with websockets.connect(provider.url, open_timeout=provider.timeout_seconds) as ws:
-                        await ws.send(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "eth_subscribe", "params": ["newHeads"]}))
-                        provider.record(True, (time.perf_counter() - started) * 1000)
-                        return {"name": provider.name, "state": provider.state, "ok": True, "latency_ms": provider.ewma_latency_ms}
-                except Exception as exc:
-                    provider.record(False, (time.perf_counter() - started) * 1000)
-                    return {"name": provider.name, "state": provider.state, "ok": False, "error": str(exc)}
-        return await asyncio.gather(*(probe(p) for p in self.providers))
