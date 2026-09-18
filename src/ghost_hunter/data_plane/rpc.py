@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-import itertools
 import time
 from dataclasses import dataclass, field
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 import httpx
 
@@ -63,9 +63,10 @@ class RPCProvider:
             self.cooldown_until = now + min(60.0, 2.0 ** min(self.failures, 6))
             self.state = "cooldown"
 
-    def observe_block(self, block_number: int, reference_block: int | None = None) -> None:
+    def observe_block(self, block_number: int, reference_block: int | None = None, *, max_lag_blocks: int = 0) -> None:
         self.last_block = block_number
-        if reference_block is not None and reference_block - block_number > 0:
+        lag = 0 if reference_block is None else reference_block - block_number
+        if lag > max_lag_blocks:
             self.consecutive_stale += 1
             if self.consecutive_stale >= 3:
                 self.state = "quarantined"
@@ -86,7 +87,6 @@ class MultiRPC:
         self.providers = providers
         self.max_batch = max_batch
         self.max_parallel_probes = max_parallel_probes
-        self._rr = itertools.count()
 
     def _ordered(self, capability: str | None = None) -> list[RPCProvider]:
         candidates = [p for p in self.providers if p.available and (capability is None or not p.capabilities or capability in p.capabilities)]
@@ -94,7 +94,7 @@ class MultiRPC:
             candidates = [p for p in self.providers if p.state != "disabled"]
         if not candidates:
             raise RPCError("no usable RPC providers remain")
-        return sorted(candidates, key=lambda p: (p.score, next(self._rr)))
+        return sorted(candidates, key=lambda p: p.score)
 
     async def _post(self, provider: RPCProvider, payload: Any) -> Any:
         started = time.perf_counter()
@@ -160,8 +160,8 @@ class MultiRPC:
             raise RPCError(f"provider disagreement for {method}")
         return good[0]
 
-    async def health_snapshot(self) -> list[dict[str, Any]]:
-        """Probe every retained endpoint concurrently; failures never delete endpoints."""
+    async def health_snapshot(self, *, max_lag_blocks: int = 2) -> list[dict[str, Any]]:
+        """Probe every retained endpoint concurrently and classify block lag."""
         semaphore = asyncio.Semaphore(self.max_parallel_probes)
 
         async def probe(provider: RPCProvider) -> dict[str, Any]:
@@ -175,7 +175,17 @@ class MultiRPC:
                 except Exception as exc:
                     return {"name": provider.name, "state": provider.state, "error": str(exc), "failures": provider.failures}
 
-        return await asyncio.gather(*(probe(p) for p in self.providers))
+        snapshots = await asyncio.gather(*(probe(p) for p in self.providers))
+        successful_blocks = [item["block"] for item in snapshots if "block" in item]
+        if successful_blocks:
+            reference = max(successful_blocks)
+            for item, provider in zip(snapshots, self.providers):
+                if "block" in item:
+                    provider.observe_block(int(item["block"]), reference, max_lag_blocks=max_lag_blocks)
+                    provider.restore_if_ready()
+                    item["state"] = provider.state
+                    item["consecutive_stale"] = provider.consecutive_stale
+        return snapshots
 
     def add_provider(self, provider: RPCProvider) -> None:
         if any(p.name == provider.name or p.url == provider.url for p in self.providers):
@@ -183,4 +193,18 @@ class MultiRPC:
         self.providers.append(provider)
 
     def retained_registry(self) -> list[dict[str, Any]]:
-        return [{"name": p.name, "url": p.url, "state": p.state, "successes": p.successes, "failures": p.failures, "latency_ms": p.ewma_latency_ms, "last_block": p.last_block} for p in self.providers]
+        def redact(url: str) -> str:
+            parts = urlsplit(url)
+            return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+
+        return [{
+            "name": p.name,
+            "url": redact(p.url),
+            "state": p.state,
+            "successes": p.successes,
+            "failures": p.failures,
+            "latency_ms": p.ewma_latency_ms,
+            "last_block": p.last_block,
+            "consecutive_stale": p.consecutive_stale,
+            "capabilities": sorted(p.capabilities),
+        } for p in self.providers]
