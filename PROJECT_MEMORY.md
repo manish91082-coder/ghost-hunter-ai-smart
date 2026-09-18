@@ -69,6 +69,15 @@ A WSS event is an acceleration signal. Execution-critical state is revalidated a
 
 The target is low-latency reaction, not an impossible fixed sub-second guarantee.
 
+## Discovery Runtime Added
+- adaptive log scanner with bounded range expansion/shrink-on-error
+- verified event-topic registry boundary
+- canonical-head/reorg guard
+- replayable overlap-rescan design
+- protocol-neutral pool discovery adapter interface
+
+Event topics are not activated from guesses. Canonical ABI/deployment verification is required before a venue becomes authoritative.
+
 ## Data-Plane Implementation Completed
 - multi-provider async JSON-RPC
 - batch calls
