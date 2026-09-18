@@ -5,7 +5,7 @@
 ### Verification Doctrine
 **ZERO-DRIFT / MULTI-PASS VERIFICATION IS FROZEN.** Every implementation step must be audited repeatedly before being treated as complete. The target is 100 independent checks/passes where practical; this means repeated static inspection, invariant review, regression tests, failure-path tests, integration checks and re-audit, not a claim that one identical test was blindly executed 100 times. No step is promoted to execution merely because it passes once. Any discovered defect sends the step back to correction and re-verification.
 
-**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE HARDENING ACTIVE; QUICKSWAP DISCOVERY ACTIVE; DURABLE EVIDENCE/REORG + PROVIDER-DIVERSE CANONICAL COORDINATION ACTIVE**
+**PHASE 0 + P0.5 COMPLETE; P1 DATA-PLANE HARDENING ACTIVE; QUICKSWAP DISCOVERY + DURABLE EVIDENCE + PROVIDER-DIVERSE RECONCILIATION ACTIVE**
 
 ## Repository
 - `manish91082-coder/ghost-hunter-ai-smart`
@@ -78,6 +78,9 @@ Build a dynamic Polygon PoS flash-loan arbitrage system that:
 - [x] Canonical ancestry coordinator with overlap-rescan trigger
 - [x] Provider-diverse quorum selection for critical reads
 - [x] Durable store wired into head orchestration
+- [x] QuickSwap discovery persistence with block/log evidence
+- [x] Critical QuickSwap factory reconciliation requires provider-diverse quorum
+- [x] Configurable durable store path for process restart persistence
 
 ## Important Design Correction
 WSS/polling is an acceleration path, not canonical truth. A new-head event must trigger immediate downstream work, while execution-critical state is re-read/reconciled before authorization.
@@ -303,3 +306,12 @@ Next:
 - Wired `CanonicalCoordinator` + durable `DiscoveryStore` into `DataPlane.run_heads()`; existing head-handler signature is preserved.
 - Added regression tests for provider-family diversity and insufficient diversity.
 - No live execution path was introduced.
+
+
+## 2026-09-19 — Persistent Protocol Discovery Gate
+- Extended QuickSwap discovery candidates with block hash and log index evidence when supplied by canonical RPC logs.
+- Added `persist_candidate()` to persist verified candidates through the SQLite evidence store; missing block hash is rejected.
+- QuickSwap factory `getPair`/`poolByPair` reconciliation now requires the provider-diverse quorum primitive in production `MultiRPC`.
+- DataPlane store path is configurable so deployments can use a persistent SQLite file instead of the in-memory default.
+- Added regression coverage for durable QuickSwap candidate persistence and idempotent replay.
+- No transaction signer or live execution was introduced.
