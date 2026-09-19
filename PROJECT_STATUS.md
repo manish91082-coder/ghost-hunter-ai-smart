@@ -469,3 +469,13 @@ Next:
 - Synchronized `PROJECT_STATUS.md` with the actual P1 reorg/replay/evidence hardening state.
 - This commit intentionally contains no trading, strategy, economics or live-execution feature work.
 - Next gate after clean exact-SHA verification: continue P1 data-plane audit only after the fresh governance checkpoint is terminal-green.
+
+## 2026-09-19 — GH-TASK-0020 Verified: RPC Failure Boundary + Replay Idempotence Audit
+- Hardened the QuickSwap processing boundary so provider/RPC infrastructure failures are no longer downgraded to per-candidate rejection; they propagate and remain replay-fatal.
+- Added regression coverage proving an RPC/provider disagreement leaves no canonical discovery, pool snapshot, token snapshot or cache promotion behind.
+- Added repeated-block processing coverage proving durable idempotence: the same canonical QuickSwap block does not duplicate discovery or snapshot state.
+- Final GH-TASK-0020 implementation SHA: `7ba089d4c20d12b0bf0a6329f0f61270a302dd5a`.
+- Exact verification: data-plane-ci #181 completed SUCCESS; repo-state-verifier #78 completed SUCCESS and validated the exact promoted SHA with all required gate conditions true.
+- An earlier verifier #77 raced against an intermediate GH-TASK-0020 commit and checked a stale expected SHA; it is not evidence of a code/test failure and is not the authoritative verifier for the final implementation SHA.
+- Live execution remains disabled.
+- Next gate: continue P1 data-plane hardening only after this governance reconciliation checkpoint is terminal-green.
