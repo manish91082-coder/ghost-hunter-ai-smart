@@ -413,3 +413,12 @@ Next:
 - Verified GitHub state: commit c87dd5903a76254098be03d0c5754407c677df49; data-plane-ci #117 = SUCCESS; repo-state-verifier #11 = SUCCESS; pytest = 48 passed.
 - Live trading remains OFF.
 - Next gate: connect replay-range execution directly to live head/reorg context and persist enough normalized pool/token state to reconstruct cache safely after restart.
+
+
+## 2026-09-19 — GH-TASK-0005 Verified: Live Head/Reorg Replay Integration
+- Canonical discontinuities now automatically enter the deterministic replacement-chain replay executor.
+- `run_heads()` replays the overlap range and does not separately process the rejected fork head.
+- `run_heads_context()` emits replayed replacement blocks as accepted `HeadContext` records.
+- CI exposed stale test assumptions during implementation; the fixtures were corrected and revalidated without weakening the runtime gate.
+- Verified checkpoint: `8305fefd155e6189ffb3ce8a7d9ff7853a80f256`, data-plane-ci #124 SUCCESS, repo-state-verifier #18 SUCCESS.
+- Live trading remains independently OFF.
