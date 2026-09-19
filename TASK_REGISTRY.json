@@ -114,9 +114,15 @@
     },
     {
       "id": "GH-TASK-0023",
-      "title": "RPC error and quorum evidence hardening",
-      "commit": "REOPENED_FOR_REVERIFICATION",
-      "state": "reverification_required"
+      "title": "RPC error and quorum evidence hardening (revalidated on complete tree)",
+      "commit": "baa91951980dac22647862e80f1c46b66383af72",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0025",
+      "title": "Restore complete repository tree and revalidate RPC hardening",
+      "commit": "baa91951980dac22647862e80f1c46b66383af72",
+      "state": "verified"
     }
   ]
 }

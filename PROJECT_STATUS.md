@@ -487,3 +487,14 @@ Next:
 - The RPC hardening changes from the prior sequence are being preserved and re-applied onto the last known complete verified baseline.
 - Live execution remains disabled.
 
+## 2026-09-20 — GH-TASK-0025 Verified: Complete-Tree Restoration + RPC Revalidation
+- Restored the complete repository tree from the last known complete verified baseline.
+- Reapplied the intended RPC error/quorum evidence hardening without carrying forward the incomplete intermediate Git tree.
+- GH-TASK-0023 is now considered revalidated on this complete-tree SHA; its earlier incomplete-tree SHA is not used as verification evidence.
+- Final complete-tree SHA: `baa91951980dac22647862e80f1c46b66383af72`.
+- Exact `data-plane-ci` #186 completed SUCCESS; test job and all workflow steps completed successfully.
+- Exact `repo-state-verifier` #83 completed SUCCESS; inspect job and all workflow steps completed successfully.
+- Repository comparison against the last complete verified baseline shows only the intended RPC and governance changes.
+- Live execution remains disabled.
+- Next gate: governance synchronization before the next P1 engineering task.
+
