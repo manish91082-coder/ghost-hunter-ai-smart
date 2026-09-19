@@ -47,6 +47,26 @@ class DataPlane:
             )
             await handler(block)
 
+    async def replay_range(self, start: int, end: int, handler) -> None:
+        """Replay an exact inclusive block range through canonical processing."""
+        if start < 0 or end < start:
+            raise ValueError("invalid replay range")
+        await self.bootstrap()
+        previous_hash: str | None = None
+        for number in range(start, end + 1):
+            block = await self.chain.block_by_number(number)
+            if block.number != number:
+                raise RuntimeError("replay returned the wrong block number")
+            if previous_hash is not None and block.parent_hash != previous_hash:
+                raise RuntimeError("replay chain is discontinuous")
+            accepted = self.canonical.record_replayed_block(
+                CanonicalHead(block.number, block.hash, block.parent_hash)
+            )
+            if not accepted:
+                raise RuntimeError("replay block rejected by canonical coordinator")
+            await handler(block)
+            previous_hash = block.hash
+
     async def run_heads_context(self, handler, poll_interval: float = 0.25) -> None:
         """Run heads while explicitly propagating canonical/replay decisions."""
         await self.bootstrap()
