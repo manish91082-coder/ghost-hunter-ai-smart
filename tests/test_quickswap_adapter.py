@@ -242,3 +242,87 @@ def test_candidate_key_separates_fork_evidence():
     a = adapter.decode_log("v2", dict(base, blockHash="0xaaa"))
     b = adapter.decode_log("v2", dict(base, blockHash="0xbbb"))
     assert adapter.candidate_key(a) != adapter.candidate_key(b)
+
+
+@pytest.mark.asyncio
+async def test_process_block_provider_failure_is_replay_fatal(tmp_path):
+    from ghost_hunter.data_plane.models import PoolState, TokenState
+    from ghost_hunter.data_plane.rpc import RPCError
+    from ghost_hunter.data_plane.scanner import LogQuery
+    from ghost_hunter.data_plane.store import DiscoveryStore
+
+    token0, token1, pool = "0x" + "1" * 40, "0x" + "2" * 40, "0x" + "3" * 40
+    adapter = make_adapter()
+    candidate = adapter.decode_log("v2", {
+        "address": V2_FACTORY,
+        "topics": [EVENTS["v2_pair_created"].topic0, topic(token0), topic(token1)],
+        "data": "0x" + word(pool) + f"{7:064x}",
+        "blockNumber": "0x10",
+        "blockHash": "h10",
+        "transactionHash": "0xtx",
+        "logIndex": "0x1",
+    })
+
+    class Scanner:
+        async def scan(self, query: LogQuery):
+            return [dict(
+                address=V2_FACTORY,
+                topics=[EVENTS["v2_pair_created"].topic0, topic(token0), topic(token1)],
+                data="0x" + word(pool) + f"{7:064x}",
+                blockNumber="0x10",
+                blockHash="h10",
+                transactionHash="0xtx",
+                logIndex="0x1",
+            )]
+
+    async def fail_reconcile(_candidate):
+        raise RPCError("provider disagreement for eth_call")
+
+    adapter.reconcile_candidate = fail_reconcile
+
+    with DiscoveryStore(tmp_path / "provider-failure.sqlite") as store:
+        store.record_block(16, "h10", "h9")
+        with pytest.raises(RPCError, match="provider disagreement"):
+            await adapter.process_block(Scanner(), store, 16)
+        assert store.canonical_records() == []
+        assert store.canonical_pool_snapshots() == []
+        assert store.canonical_token_snapshots() == []
+        assert adapter.cache.pools == {}
+        assert adapter.cache.tokens == {}
+
+
+@pytest.mark.asyncio
+async def test_repeated_quickswap_block_processing_is_durable_idempotent(tmp_path):
+    from ghost_hunter.data_plane.scanner import LogQuery
+    from ghost_hunter.data_plane.store import DiscoveryStore
+
+    token0, token1, pool = "0x" + "1" * 40, "0x" + "2" * 40, "0x" + "3" * 40
+    log = {
+        "address": V2_FACTORY,
+        "topics": [EVENTS["v2_pair_created"].topic0, topic(token0), topic(token1)],
+        "data": "0x" + word(pool) + f"{7:064x}",
+        "blockNumber": "0x10",
+        "blockHash": "h10",
+        "transactionHash": "0xtx",
+        "logIndex": "0x1",
+    }
+    adapter = make_adapter()
+    adapter.rpc.pair_result = "0x" + word(pool)
+    adapter.rpc.values[("eth_call", pool, "0xc45a0155")] = "0x" + word(V2_FACTORY)
+    adapter.rpc.values[("eth_call", pool, "0x0dfe1681")] = "0x" + word(token0)
+    adapter.rpc.values[("eth_call", pool, "0xd21220a7")] = "0x" + word(token1)
+    adapter.rpc.values[("eth_call", pool, "0x0902f1ac")] = "0x" + "0" * 128 + "0" * 64
+    adapter.rpc.values[("eth_call", token0, "0x313ce567")] = "0x" + f"{18:064x}"
+    adapter.rpc.values[("eth_call", token1, "0x313ce567")] = "0x" + f"{6:064x}"
+
+    class Scanner:
+        async def scan(self, query: LogQuery):
+            return [log] if query.from_block == 16 and query.to_block == 16 else []
+
+    with DiscoveryStore(tmp_path / "idempotent.sqlite") as store:
+        store.record_block(16, "h10", "h9")
+        assert await adapter.process_block(Scanner(), store, 16) == 1
+        assert await adapter.process_block(Scanner(), store, 16) == 1
+        assert len(store.canonical_records()) == 1
+        assert len(store.canonical_pool_snapshots()) == 1
+        assert len(store.canonical_token_snapshots()) == 2
