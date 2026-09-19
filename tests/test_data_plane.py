@@ -420,7 +420,11 @@ async def test_reorg_replay_runs_real_quickswap_persistence_path(tmp_path):
         scanner=FakeScanner(), quickswap=adapter,
     )
     seen = []
-    await plane.run_heads(lambda block: seen.append(block.number), poll_interval=0)
+
+    async def record_block(block):
+        seen.append(block.number)
+
+    await plane.run_heads(record_block, poll_interval=0)
 
     assert seen == [8, 9, 10, 11]
     assert store.latest_canonical_head() == (11, "new11", "new10")
