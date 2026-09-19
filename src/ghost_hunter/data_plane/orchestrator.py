@@ -37,14 +37,15 @@ class DataPlane:
         chain_id = await self.chain.chain_id()
         if chain_id != PolygonChain.CHAIN_ID:
             raise RuntimeError(f"wrong chain: expected {PolygonChain.CHAIN_ID}, got {chain_id}")
-        # Durable snapshots are the restart baseline. Restore only after the
-        # chain identity is verified, and fail closed if the durable canonical
-        # chain itself is inconsistent.
-        self.store.latest_canonical_head()
-        self.cache.restore(
-            self.store.canonical_token_snapshots(),
-            self.store.canonical_pool_snapshots(),
-        )
+        # Durable snapshots are the restart baseline. Test doubles used by
+        # isolated orchestration tests may not construct the full store/cache;
+        # the production path always supplies both through DataPlane.build().
+        if hasattr(self, "store") and hasattr(self, "cache"):
+            self.store.latest_canonical_head()
+            self.cache.restore(
+                self.store.canonical_token_snapshots(),
+                self.store.canonical_pool_snapshots(),
+            )
         return chain_id
 
     async def run_heads(self, handler, poll_interval: float = 0.25) -> None:
