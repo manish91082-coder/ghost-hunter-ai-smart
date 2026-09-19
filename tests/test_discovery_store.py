@@ -195,4 +195,6 @@ def test_restart_reconstructs_discoveries_only_from_current_canonical_fork():
 
         with DiscoveryStore(path) as reopened:
             assert reopened.canonical_records() == [new]
-            assert reopened.orphaned_records() == [old]
+            # The stale row was deliberately corrupted back to canonical.
+            # Reconstruction must exclude it by exact fork hash.
+            assert reopened.orphaned_records() == []
