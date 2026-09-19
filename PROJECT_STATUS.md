@@ -403,3 +403,13 @@ Next:
 - Root cause fixed: source CI run ID and current verifier run ID are now separate, so the verifier excludes only its own in-progress check run.
 - Workflow-run mode checks out the exact tested SHA.
 - Progression gate: GREEN for this checkpoint. Live trading remains independently OFF.
+
+
+## 2026-09-19 — GH-TASK-0004 Durable Restart + Replay Control Plane
+- CanonicalCoordinator now restores the latest canonical head from the SQLite evidence store during process construction.
+- PolygonChain.block_by_number() provides exact block-number reads for deterministic replacement-chain replay.
+- DataPlane.replay_range(start,end,handler) validates block numbering and parent-hash continuity, records each replayed block as canonical, then invokes the processing handler.
+- Regression coverage added for canonical-head restart recovery and replay-range execution.
+- Verified GitHub state: commit c87dd5903a76254098be03d0c5754407c677df49; data-plane-ci #117 = SUCCESS; repo-state-verifier #11 = SUCCESS; pytest = 48 passed.
+- Live trading remains OFF.
+- Next gate: connect replay-range execution directly to live head/reorg context and persist enough normalized pool/token state to reconstruct cache safely after restart.
