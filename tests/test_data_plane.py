@@ -120,3 +120,35 @@ async def test_head_context_replays_replacement_chain_on_discontinuity():
     assert all(isinstance(item, HeadContext) for item in seen)
     assert [item.block.number for item in seen] == [10, 8, 9, 10, 11]
     assert all(item.accepted and item.replay_start is None for item in seen)
+
+
+@pytest.mark.asyncio
+async def test_replay_rejects_replacement_chain_with_wrong_terminal_hash():
+    from ghost_hunter.data_plane.models import BlockState
+    from ghost_hunter.data_plane.orchestrator import DataPlane
+
+    class FakeChain:
+        CHAIN_ID = 137
+        async def chain_id(self):
+            return 137
+        async def block_by_number(self, number):
+            return {
+                8: BlockState(8, "h8", "h7", 0, None, 0),
+                9: BlockState(9, "h9", "h8", 0, None, 0),
+            }[number]
+
+    class FakeCanonical:
+        def record_replayed_block(self, _head):
+            raise AssertionError("canonical state must not be changed before final-chain validation")
+
+    plane = DataPlane.__new__(DataPlane)
+    plane.chain = FakeChain()
+    plane.canonical = FakeCanonical()
+    seen = []
+
+    async def handler(block):
+        seen.append(block)
+
+    with pytest.raises(RuntimeError, match="observed canonical head"):
+        await plane.replay_range(8, 9, handler, expected_end_hash="unexpected")
+    assert seen == []
