@@ -1,3 +1,5 @@
+import pytest
+
 from ghost_hunter.data_plane.discovery import VenueAdapterSpec, DiscoveryEngine
 from ghost_hunter.data_plane.cache import StateCache
 from ghost_hunter.data_plane.events import EventRegistry, EventTopic
@@ -82,3 +84,47 @@ def test_same_head_is_idempotent():
         head = CanonicalHead(10, "h10", "h9")
         assert c.observe(head) == (True, None)
         assert c.observe(head) == (True, None)
+
+from ghost_hunter.data_plane.orchestrator import DataPlane
+
+class ReplayRPC:
+    def __init__(self):
+        self.blocks = {
+            8: {"number":"0x8","hash":"h8","parentHash":"h7","timestamp":"0x1","baseFeePerGas":"0x1"},
+            9: {"number":"0x9","hash":"h9","parentHash":"h8","timestamp":"0x2","baseFeePerGas":"0x1"},
+            10: {"number":"0xa","hash":"h10","parentHash":"h9","timestamp":"0x3","baseFeePerGas":"0x1"},
+        }
+
+    async def call(self, method, params=None, **kwargs):
+        if method == "eth_chainId":
+            return "0x89"
+        if method == "eth_getBlockByNumber":
+            if params[0] == "latest":
+                return self.blocks[10]
+            return self.blocks[int(params[0], 16)]
+        raise AssertionError(method)
+
+
+def test_coordinator_restores_canonical_head_after_restart():
+    from ghost_hunter.data_plane.store import DiscoveryStore
+    from ghost_hunter.data_plane.reorg import CanonicalCoordinator, CanonicalHead
+    with DiscoveryStore() as store:
+        c = CanonicalCoordinator(store)
+        assert c.observe(CanonicalHead(10, "h10", "h9")) == (True, None)
+        assert c.observe(CanonicalHead(11, "h11", "h10")) == (True, None)
+        restored = CanonicalCoordinator(store)
+        assert restored.guard.head == CanonicalHead(11, "h11", "h10")
+        assert restored.observe(CanonicalHead(12, "h12", "h11")) == (True, None)
+
+
+@pytest.mark.asyncio
+async def test_data_plane_replay_range_rebuilds_canonical_head():
+    dp = DataPlane.build(ReplayRPC())
+    seen = []
+
+    async def handler(block):
+        seen.append(block.number)
+
+    await dp.replay_range(8, 10, handler)
+    assert seen == [8, 9, 10]
+    assert dp.store.latest_canonical_head() == (10, "h10", "h9")
