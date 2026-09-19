@@ -112,8 +112,11 @@ def test_reorg_restart_reconstructs_only_replacement_fork_state():
         with DiscoveryStore(path) as store:
             store.record_block(9, "h9", "h8")
             store.record_block(10, "old10", "h9")
-            old_token = token(10, "OLD")
-            old_pool = pool(10, {"reserve0": 100, "reserve1": 200})
+            old_token = token(10, "OLD").__class__("0xOLDTOKEN", 18, "OLD", "code-10", 10, "quorum", 0.99)
+            old_pool = pool(10, {"reserve0": 100, "reserve1": 200}).__class__(
+                "0xOLDPOOL", "quickswap", "v2", "0xOLDTOKEN", "0xOTHER", 10,
+                {"reserve0": 100, "reserve1": 200}, "state-10", "quorum", 0.99
+            )
             store.record_token_snapshot(old_token)
             store.record_pool_snapshot(old_pool)
 
@@ -123,8 +126,11 @@ def test_reorg_restart_reconstructs_only_replacement_fork_state():
 
             store.record_block(10, "new10", "h9")
             store.record_block(11, "new11", "new10")
-            new_token = token(11, "NEW")
-            new_pool = pool(11, {"reserve0": 7, "reserve1": 11})
+            new_token = token(11, "NEW").__class__("0xNEWTOKEN", 18, "NEW", "code-11", 11, "quorum", 0.99)
+            new_pool = pool(11, {"reserve0": 7, "reserve1": 11}).__class__(
+                "0xNEWPOOL", "quickswap", "v2", "0xNEWTOKEN", "0xOTHER", 11,
+                {"reserve0": 7, "reserve1": 11}, "state-11", "quorum", 0.99
+            )
             assert store.record_token_snapshot(new_token)
             assert store.record_pool_snapshot(new_pool)
             assert store.latest_canonical_head() == (11, "new11", "new10")
@@ -135,12 +141,9 @@ def test_reorg_restart_reconstructs_only_replacement_fork_state():
 
         with DiscoveryStore(path) as reopened:
             assert reopened.canonical_token_snapshots() == [
-                new_token.__class__("0xtoken", 18, "NEW", "code-11", 11, "quorum", 0.99)
+                new_token
             ]
             assert reopened.canonical_pool_snapshots() == [
-                new_pool.__class__(
-                    "0xpool", "quickswap", "v2", "0xtoken", "0xother", 11,
-                    {"reserve0": 7, "reserve1": 11}, "state-11", "quorum", 0.99
-                )
+                new_pool
             ]
             assert reopened.latest_canonical_head() == (11, "new11", "new10")
