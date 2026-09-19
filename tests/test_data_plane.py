@@ -608,8 +608,11 @@ async def test_quickswap_persistence_failure_aborts_deep_reorg_replay(tmp_path):
         scanner=FakeScanner(), quickswap=adapter,
     )
 
+    async def noop(_block):
+        return None
+
     with pytest.raises(DiscoveryPersistenceError):
-        await plane.run_heads(lambda _block: None, poll_interval=0)
+        await plane.run_heads(noop, poll_interval=0)
 
     assert store.latest_canonical_head() == (7, "h7", "h6")
     assert store.canonical_records() == []
