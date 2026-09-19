@@ -238,8 +238,17 @@ class QuickSwapAdapter:
             self.cache.put_pool(pool_state)
         return pool_state
 
-    def candidate_key(self, candidate: DiscoveryCandidate) -> tuple[str, str, str, int]:
-        return (candidate.created.venue, candidate.created.pool_type, candidate.created.pool.lower(), candidate.block_number)
+    def candidate_key(self, candidate: DiscoveryCandidate) -> tuple[str, str, str, int, str, str | None, int | None]:
+        # Include fork identity so an orphaned discovery can never block its canonical replacement.
+        return (
+            candidate.created.venue,
+            candidate.created.pool_type,
+            candidate.created.pool.lower(),
+            candidate.block_number,
+            (candidate.block_hash or "").lower(),
+            candidate.transaction_hash.lower() if candidate.transaction_hash else None,
+            candidate.log_index,
+        )
 
     def already_discovered(self, candidate: DiscoveryCandidate) -> bool:
         return candidate.created.pool.lower() in self.cache.pools
@@ -310,7 +319,19 @@ class QuickSwapAdapter:
                         "token0_code_hash": token0.code_hash,
                         "token1_code_hash": token1.code_hash,
                     }
-                    self.persist_candidate(candidate, store, payload)
+                    key = ":".join(map(str, self.candidate_key(candidate)))
+                    record = DiscoveryRecord(
+                        candidate_key=key,
+                        venue=candidate.created.venue,
+                        pool_type=candidate.created.pool_type,
+                        pool_address=candidate.created.pool.lower(),
+                        block_number=candidate.block_number,
+                        block_hash=candidate.block_hash,
+                        transaction_hash=candidate.transaction_hash,
+                        log_index=candidate.log_index,
+                        payload_hash=store.payload_hash(payload),
+                    )
+                    store.record_discovery_bundle(record, payload, pool_state, (token0, token1))
                     self.cache.put_pool(pool_state)
                     self.cache.put_token(token0)
                     self.cache.put_token(token1)
