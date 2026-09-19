@@ -422,3 +422,11 @@ Next:
 - CI exposed stale test assumptions during implementation; the fixtures were corrected and revalidated without weakening the runtime gate.
 - Verified checkpoint: `8305fefd155e6189ffb3ce8a7d9ff7853a80f256`, data-plane-ci #124 SUCCESS, repo-state-verifier #18 SUCCESS.
 - Live trading remains independently OFF.
+
+
+## 2026-09-19 — GH-TASK-0005 VERIFIED CHECKPOINT
+- Live head/reorg orchestration now invokes deterministic replacement-chain replay on canonical discontinuity.
+- Context-mode replay emits replacement blocks as accepted canonical HeadContext records.
+- Verification: commit 8305fefd155e6189ffb3ce8a7d9ff7853a80f256; data-plane-ci #124 SUCCESS; repo-state-verifier #18 SUCCESS; verifier inspect job SUCCESS.
+- CI failures #121/#122/#123 were investigated and corrected at the test/fixture layer; implementation was not weakened.
+- Next implementation gate: durable normalized pool/token snapshots and SQLite-backed cache reconstruction.
