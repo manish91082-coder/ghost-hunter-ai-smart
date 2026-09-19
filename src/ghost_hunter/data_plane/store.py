@@ -244,9 +244,9 @@ class DiscoveryStore:
 
     def _record_token_snapshot_uncommitted(self, state: TokenState) -> bool:
         existing = self._db.execute(
-            "SELECT block_number FROM token_snapshots WHERE address=?", (state.address.lower(),)
+            "SELECT block_number,status FROM token_snapshots WHERE address=?", (state.address.lower(),)
         ).fetchone()
-        if existing and int(existing["block_number"]) > state.block_number:
+        if existing and existing["status"] == "canonical" and int(existing["block_number"]) > state.block_number:
             return False
         self._db.execute("""INSERT INTO token_snapshots(address,decimals,symbol,code_hash,block_number,block_hash,source,confidence,status)
             VALUES(?,?,?,?,?,?,?,?,'canonical')
@@ -260,9 +260,9 @@ class DiscoveryStore:
 
     def _record_pool_snapshot_uncommitted(self, state: PoolState) -> bool:
         existing = self._db.execute(
-            "SELECT block_number FROM pool_snapshots WHERE address=?", (state.address.lower(),)
+            "SELECT block_number,status FROM pool_snapshots WHERE address=?", (state.address.lower(),)
         ).fetchone()
-        if existing and int(existing["block_number"]) > state.block_number:
+        if existing and existing["status"] == "canonical" and int(existing["block_number"]) > state.block_number:
             return False
         payload = json.dumps(dict(state.state), sort_keys=True, separators=(",", ":"), default=str)
         self._db.execute("""INSERT INTO pool_snapshots(address,venue,pool_type,token0,token1,block_number,block_hash,state_json,state_hash,source,confidence,status)
@@ -283,8 +283,8 @@ class DiscoveryStore:
             raise ValueError("token snapshot requires a valid block number")
         if self.canonical_block_hash(state.block_number) is None:
             raise ValueError("token snapshot is not anchored to a canonical block")
-        existing = self._db.execute("SELECT block_number FROM token_snapshots WHERE address=?", (state.address.lower(),)).fetchone()
-        if existing and int(existing["block_number"]) > state.block_number:
+        existing = self._db.execute("SELECT block_number,status FROM token_snapshots WHERE address=?", (state.address.lower(),)).fetchone()
+        if existing and existing["status"] == "canonical" and int(existing["block_number"]) > state.block_number:
             return False
         self._db.execute("""INSERT INTO token_snapshots(address,decimals,symbol,code_hash,block_number,block_hash,source,confidence,status)
             VALUES(?,?,?,?,?,?,?,?,'canonical')
@@ -301,8 +301,8 @@ class DiscoveryStore:
             raise ValueError("pool snapshot requires a valid block number")
         if self.canonical_block_hash(state.block_number) is None:
             raise ValueError("pool snapshot is not anchored to a canonical block")
-        existing = self._db.execute("SELECT block_number FROM pool_snapshots WHERE address=?", (state.address.lower(),)).fetchone()
-        if existing and int(existing["block_number"]) > state.block_number:
+        existing = self._db.execute("SELECT block_number,status FROM pool_snapshots WHERE address=?", (state.address.lower(),)).fetchone()
+        if existing and existing["status"] == "canonical" and int(existing["block_number"]) > state.block_number:
             return False
         payload = json.dumps(dict(state.state), sort_keys=True, separators=(",", ":"), default=str)
         self._db.execute("""INSERT INTO pool_snapshots(address,venue,pool_type,token0,token1,block_number,block_hash,state_json,state_hash,source,confidence,status)
