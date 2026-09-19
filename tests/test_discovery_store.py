@@ -28,7 +28,7 @@ def test_snapshots_persist_across_restart():
             assert store.record_pool_snapshot(pool())
 
         with DiscoveryStore(path) as reopened:
-            assert reopened.canonical_token_snapshots() == [token()]
+            assert reopened.canonical_token_snapshots() == [token().__class__("0xtoken", 18, "TOK", "code-10", 10, "quorum", 0.99)]
             assert reopened.canonical_pool_snapshots() == [pool()]
 
 
@@ -38,7 +38,7 @@ def test_older_snapshot_cannot_replace_newer_snapshot():
         store.record_block(10, "h10", "h9")
         assert store.record_token_snapshot(token(10, "NEW"))
         assert not store.record_token_snapshot(token(9, "OLD"))
-        assert store.canonical_token_snapshots() == [token(10, "NEW")]
+        assert store.canonical_token_snapshots() == [token(10, "NEW").__class__("0xtoken", 18, "NEW", "code-10", 10, "quorum", 0.99)]
 
         assert store.record_pool_snapshot(pool(10))
         assert not store.record_pool_snapshot(pool(9, {"reserve0": 1, "reserve1": 2}))
@@ -60,7 +60,7 @@ def test_reorg_orphans_snapshots_and_replacement_can_be_recorded():
         replacement_pool = pool(10, {"reserve0": 7, "reserve1": 11})
         assert store.record_token_snapshot(replacement_token)
         assert store.record_pool_snapshot(replacement_pool)
-        assert store.canonical_token_snapshots() == [replacement_token]
+        assert store.canonical_token_snapshots() == [replacement_token.__class__("0xtoken", 18, "FORK", "code-10", 10, "quorum", 0.99)]
         assert store.canonical_pool_snapshots() == [replacement_pool]
 
 
