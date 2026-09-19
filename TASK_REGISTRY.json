@@ -1,0 +1,9 @@
+{
+  "schema":"ghost-hunter.task-registry.v1",
+  "task_id_format":"GH-TASK-NNNN",
+  "verification_rule":"Exact implementation SHA must be tested by data-plane-ci and then verified by repo-state-verifier.",
+  "tasks":[
+    {"id":"GH-TASK-0001","title":"Durable canonical head recovery","commit":"f2cd22beb720cd5ff244df8a6e3d79199114a62a","status":"awaiting-exact-ci-verification"},
+    {"id":"GH-TASK-0002","title":"Automatic exact GitHub state verifier","commit":"SELF","status":"pending"}
+  ]
+}

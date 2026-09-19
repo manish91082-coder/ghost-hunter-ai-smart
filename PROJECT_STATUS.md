@@ -361,3 +361,11 @@ Next:
 - Added regression coverage proving a canonical head produces no replay request while a discontinuity propagates the coordinator's replay start.
 - Verification: implementation commit 232af68fda87d360dd22be28fad3572ef8278dd1 passed Actions run #102; regression commit faf1bdcdf49a3abc31021162d6ed7993a3a7f2b0 passed Actions run #103.
 - Next gate remains durable restart/reorg replay execution, including reconstructing canonical state from the SQLite store and replaying replacement blocks before promotion.
+
+
+## 2026-09-19 — Automatic GitHub State Verification Gate
+- Added `scripts/verify_repo_state.py` for exact tested-SHA and terminal Actions verification.
+- Added `.github/workflows/repo-state-verifier.yml`, triggered after `data-plane-ci` completes on a `main` push; it fails closed and uploads `repo-state.json`.
+- Added `TASK_REGISTRY.json` and the `GH-TASK-NNNN` commit-message convention for durable task identity.
+- This governance infrastructure enforces the frozen GitHub verification gate and does not authorize live trading.
+- `f2cd22beb720cd5ff244df8a6e3d79199114a62a` remains awaiting exact Actions verification because the connector's commit-run wrapper does not expose push-triggered runs.
