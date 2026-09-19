@@ -28,7 +28,6 @@ POOL_BY_PAIR_SELECTOR = "0xd9a641e1"
 GLOBAL_STATE_SELECTOR = "0xe76c01e4"
 
 
-@dataclass(frozen=True)
 class DiscoveryPersistenceError(Exception):
     """Durable evidence persistence failed and must abort the active replay."""
 
