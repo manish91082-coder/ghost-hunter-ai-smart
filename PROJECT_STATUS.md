@@ -430,3 +430,12 @@ Next:
 - Verification: commit 8305fefd155e6189ffb3ce8a7d9ff7853a80f256; data-plane-ci #124 SUCCESS; repo-state-verifier #18 SUCCESS; verifier inspect job SUCCESS.
 - CI failures #121/#122/#123 were investigated and corrected at the test/fixture layer; implementation was not weakened.
 - Next implementation gate: durable normalized pool/token snapshots and SQLite-backed cache reconstruction.
+
+
+## 2026-09-19 — GH-TASK-0006 Durable Snapshot Lifecycle VERIFIED
+- Durable SQLite token/pool snapshots are now persisted, restored, protected against stale replacement, orphaned on reorg, and reconstructed into the in-memory cache during bootstrap.
+- Snapshot regression coverage now verifies restart persistence, stale-update rejection, reorg orphaning/replacement, canonical block anchoring, and state/state-hash survival.
+- Test fixtures explicitly account for canonical lowercase Ethereum address normalization.
+- Verified checkpoint: commit `882c59aaea3d223672924abb4fdccf0259f9fc55`; data-plane-ci #135 SUCCESS; 48 pytest tests passed; repo-state-verifier #30 SUCCESS.
+- Live trading remains independently OFF.
+- Next implementation gate: harden reorg ancestry resolution and canonical snapshot anchoring before broader discovery-state expansion.
