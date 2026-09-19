@@ -278,7 +278,7 @@ async def test_reorg_replay_end_to_end_reconstructs_and_processes_replacement_ch
             return 137
 
         async def head_poll(self, _interval):
-            yield BlockState(11, "fork11", "wrong", 0, None, 0)
+            yield BlockState(11, "new11", "new10", 0, None, 0)
 
         async def block_by_number(self, number):
             return {
