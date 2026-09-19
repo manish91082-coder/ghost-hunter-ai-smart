@@ -42,12 +42,12 @@ def main():
     pulls_commit = api("/repos/" + REPO + "/commits/" + EXPECTED_SHA + "/pulls?per_page=100")
     pulls_open = api("/repos/" + REPO + "/pulls?state=open&per_page=100")
     issues_open = api("/repos/" + REPO + "/issues?state=open&per_page=100")
-    runs = api("/repos/" + REPO + "/actions/runs?branch=main&event=push&per_page=100")
+    # Include workflow_run events so concurrent verifier run IDs are visible when excluding verifier self-checks.\n    runs = api("/repos/" + REPO + "/actions/runs?branch=main&per_page=100")
     target = None
     if RUN_ID:
         target = api("/repos/" + REPO + "/actions/runs/" + RUN_ID)
     else:
-        matches = [r for r in runs.get("workflow_runs", []) if r.get("name") == WORKFLOW and str(r.get("head_sha","")).lower() == EXPECTED_SHA]
+        matches = [r for r in runs.get("workflow_runs", []) if r.get("name") == WORKFLOW and r.get("event") == "push" and str(r.get("head_sha","")).lower() == EXPECTED_SHA]
         if matches:
             matches.sort(key=lambda x: x.get('id', 0), reverse=True)
             target = matches[0]
