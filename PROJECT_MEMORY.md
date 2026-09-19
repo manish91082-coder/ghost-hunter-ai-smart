@@ -354,3 +354,9 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 
 ## 2026-09-19 Verifier Self-Check Isolation
 - Hardened the repository inspector so its own in-progress check cannot create a false failure while the inspector is running. Underlying CI/checks remain mandatory.
+
+
+## 2026-09-19 Verifier Failure Forensics
+- Screenshot evidence showed data-plane CI #110 green but repo-state-verifier #4 red for GH-TASK-0003.
+- Hardened self-check exclusion by verifier run ID and exact-SHA checkout for workflow-run verification.
+- No GREEN promotion occurs until corrected verifier is terminal-success.

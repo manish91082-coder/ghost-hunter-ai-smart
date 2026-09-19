@@ -63,7 +63,7 @@ def main():
     target_terminal = target_ok and target.get("status") == "completed"
     target_success = target_terminal and target.get("conclusion") == "success"
     jobs_ok = bool(job_rows) and all(j["status"]=="completed" and j["conclusion"]=="success" for j in job_rows)
-    external_checks = [c for c in check_rows if c["name"] != "repo-state-verifier" and (not RUN_ID or str(RUN_ID) not in str(c.get("details_url") or ""))]
+    external_checks = [c for c in check_rows if not RUN_ID or str(RUN_ID) not in str(c.get("details_url") or "")]
     bad_checks = [c for c in external_checks if c["status"] in NONTERMINAL or c["conclusion"] in BAD]
     checks_ok = bool(external_checks) and not bad_checks and all(c["status"]=="completed" and c["conclusion"]=="success" for c in external_checks)
     gate = {"main_points_to_expected_sha":main_sha==EXPECTED_SHA,"exact_ci_run_found":target_ok,"ci_terminal":target_terminal,"ci_success":target_success,"all_ci_jobs_success":jobs_ok,"no_non_success_check_run":checks_ok}

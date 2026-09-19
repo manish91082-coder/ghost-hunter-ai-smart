@@ -385,3 +385,10 @@ Next:
 
 ## 2026-09-19 — Verifier Self-Check Isolation
 - Static audit found that the verifier would see its own in-progress check while inspecting the same commit. The inspector now excludes its own `repo-state-verifier` check from the external-check gate while still requiring the underlying `data-plane-ci` checks to be terminal-success.
+
+
+## 2026-09-19 — Verifier Failure Forensics From GitHub Actions
+- Screenshot evidence shows data-plane-ci #110 green while repo-state-verifier #4 red for GH-TASK-0003.
+- Corrected self-check exclusion to use the current verifier run ID in check-run details, rather than relying on a workflow/check name.
+- Corrected workflow-run verification checkout to the exact tested SHA.
+- No GREEN promotion until corrected verifier and underlying CI are terminal-green.
