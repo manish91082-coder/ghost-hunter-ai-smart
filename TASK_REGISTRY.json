@@ -25,8 +25,38 @@
     {
       "id": "GH-TASK-0008",
       "title": "Bind reorg replay to observed canonical head",
-      "commit": "3ae3dc7eb033ff866e97d8393b46f8466ef1309b",
-      "state": "in-progress"
+      "commit": "d63e5c9a0d636d2daed50c7fa10a10e79e141d29",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0009",
+      "title": "Bind canonical replay to durable QuickSwap discovery state",
+      "commit": "398c0f75523d7cc0bacf5061a8b8df3ec8cdd8d4",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0010",
+      "title": "Canonical reorg and restart reconstruction hardening",
+      "commit": "64ba74e6cd8a7cb4a6d30c2b9df43ea693c6a215",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0011",
+      "title": "Canonical discovery reconstruction hardening",
+      "commit": "29315dc8def822f7cb66b9bc34a088d4a5827972",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0012",
+      "title": "Context replay terminal-head binding",
+      "commit": "34aaf05072af111e8f53c01efd52b3b62765816f",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0013",
+      "title": "Replay processing failure-atomicity",
+      "commit": "d041c037caaacfa07f914b5c62b378585a08e019",
+      "state": "verified"
     }
   ]
 }
