@@ -166,7 +166,7 @@ def test_discovery_is_idempotent_after_pool_is_cached():
     assert not adapter.already_discovered(candidate)
     adapter.cache.pools[pool] = object()
     assert adapter.already_discovered(candidate)
-    assert len(adapter.candidate_key(candidate)) == 4
+    assert len(adapter.candidate_key(candidate)) == 7
 
 
 def test_persist_candidate_requires_canonical_block_evidence():
@@ -222,6 +222,23 @@ async def test_process_block_persists_before_cache_promotion():
         store.record_block(16, "h10", "h9")
         assert await adapter.process_block(scanner, store, 16) == 1, adapter.rejections
         assert len(store.canonical_records()) == 1
+        assert len(store.canonical_pool_snapshots()) == 1
+        assert len(store.canonical_token_snapshots()) == 2
         assert pool.lower() in adapter.cache.pools
         assert token0.lower() in adapter.cache.tokens
         assert token1.lower() in adapter.cache.tokens
+
+
+def test_candidate_key_separates_fork_evidence():
+    adapter = make_adapter()
+    base = {
+        "address": V2_FACTORY,
+        "topics": [EVENTS["v2_pair_created"].topic0, topic("0x" + "1" * 40), topic("0x" + "2" * 40)],
+        "data": "0x" + word("0x" + "3" * 40) + f"{1:064x}",
+        "blockNumber": "0x10",
+        "transactionHash": "0xtx",
+        "logIndex": "0x1",
+    }
+    a = adapter.decode_log("v2", dict(base, blockHash="0xaaa"))
+    b = adapter.decode_log("v2", dict(base, blockHash="0xbbb"))
+    assert adapter.candidate_key(a) != adapter.candidate_key(b)
