@@ -87,12 +87,35 @@
       "title": "Reorg-safe snapshot replacement and persistence failure atomicity",
       "commit": "b3e561f3b436891f2ed66e6a11330d18dc9e49c3",
       "state": "verified"
-    }
-,
+    },
     {
       "id": "GH-TASK-0020",
       "title": "Audit RPC failure boundaries and replay idempotence",
       "commit": "7ba089d4c20d12b0bf0a6329f0f61270a302dd5a",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0019",
+      "title": "Governance reconciliation checkpoint after P1 reorg/evidence hardening",
+      "commit": "2ca203372166bedf80a5e17b1262d7777b900e0b",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0021",
+      "title": "Reconcile project status through GH-TASK-0020",
+      "commit": "5d192ed68f079d64efdbfab91060d52c3a8ffb75",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0022",
+      "title": "Fail closed on unsafe RPC provider fallback",
+      "commit": "d37fc52ea29d2c6212a8a7c99c10fc6503494495",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0023",
+      "title": "Harden RPC error and quorum evidence handling",
+      "commit": "9fc242dbaed2aeec8c5d3e2d51948803fe3f16a2",
       "state": "verified"
     }
   ]
