@@ -1,3 +1,4 @@
+import json
 import pytest
 
 from ghost_hunter.data_plane.rpc import MultiRPC, RPCError, RPCProvider
@@ -27,3 +28,12 @@ def test_ordered_allows_unrestricted_provider_for_capability():
     rpc = MultiRPC([generic, trace])
 
     assert [p.name for p in rpc._ordered("trace")] == ["generic", "trace"]
+
+
+def test_quorum_value_comparison_is_key_order_independent():
+    first = RPCProvider("first", "https://first.example")
+    second = RPCProvider("second", "https://second.example")
+    rpc = MultiRPC([first, second])
+    left = {"b": 2, "a": 1}
+    right = {"a": 1, "b": 2}
+    assert json.dumps(left, sort_keys=True, separators=(",", ":")) == json.dumps(right, sort_keys=True, separators=(",", ":"))

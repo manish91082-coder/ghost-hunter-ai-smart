@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 from dataclasses import dataclass, field
 from typing import Any
@@ -106,6 +107,8 @@ class MultiRPC:
                     error_kind = "rate_limit"
                 response.raise_for_status()
                 data = response.json()
+                if isinstance(data, dict) and "error" in data:
+                    raise RPCError(str(data["error"]))
             provider.record(True, (time.perf_counter() - started) * 1000)
             return data
         except Exception as exc:
@@ -177,7 +180,8 @@ class MultiRPC:
         good = [v.get("result") for v in values if isinstance(v, dict) and "result" in v]
         if len(good) < quorum:
             raise RPCError(f"quorum read did not obtain {quorum} successful provider results")
-        if len(set(map(str, good))) != 1:
+        signatures = {json.dumps(value, sort_keys=True, separators=(",", ":"), default=str) for value in good}
+        if len(signatures) != 1:
             raise RPCError(f"provider disagreement for {method}")
         return good[0]
 
