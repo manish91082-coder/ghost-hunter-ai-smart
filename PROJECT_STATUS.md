@@ -480,27 +480,10 @@ Next:
 - Live execution remains disabled.
 - Next gate: continue P1 data-plane hardening only after this governance reconciliation checkpoint is terminal-green.
 
-## 2026-09-19 — GH-TASK-0021 Verified: Governance Reconciliation
-- Synchronized `TASK_REGISTRY.json` and `PROJECT_STATUS.md` through GH-TASK-0020.
-- Final governance checkpoint: `5d192ed68f079d64efdbfab91060d52c3a8ffb75`.
-- Exact `data-plane-ci` and `repo-state-verifier` terminal-success gates were confirmed before further implementation.
+## 2026-09-20 — GH-TASK-0023 Verification Reopened
+- Post-verification tree audit discovered that the intermediate Git tree construction used for the GH-TASK-0023 sequence did not preserve the complete repository tree.
+- The prior green CI run therefore cannot be treated as sufficient evidence for the full repository state, even though the RPC tests themselves passed.
+- No strategy, economics or execution work is authorized until the complete repository tree is restored and the RPC hardening is revalidated on that intact tree.
+- The RPC hardening changes from the prior sequence are being preserved and re-applied onto the last known complete verified baseline.
 - Live execution remains disabled.
 
-## 2026-09-19 — GH-TASK-0022 Verified: RPC Fail-Closed Provider Selection
-- Removed unsafe fallback behavior that could reuse quarantined/disabled RPC providers when no eligible provider remained.
-- Capability-constrained routing now fails closed when no eligible provider exists.
-- Added regression coverage for quarantined-provider rejection, unavailable capability rejection, and valid unrestricted-provider capability use.
-- Final implementation SHA: `d37fc52ea29d2c6212a8a7c99c10fc6503494495`.
-- Exact `data-plane-ci` #184 and `repo-state-verifier` terminal-success gates were confirmed.
-- Live execution remains disabled.
-
-## 2026-09-19 — GH-TASK-0023 Verified: RPC Error + Quorum Evidence Hardening
-- JSON-RPC error objects are now treated as provider failures rather than successful responses.
-- Quorum evidence comparison now uses deterministic canonical JSON signatures, avoiding false disagreement caused only by object key ordering while preserving real value disagreement as a hard failure.
-- Added regression coverage for equivalent mapping results across providers.
-- Final implementation SHA: `9fc242dbaed2aeec8c5d3e2d51948803fe3f16a2`.
-- Exact `data-plane-ci` #185 completed SUCCESS; its test job and all workflow steps completed successfully.
-- Exact `repo-state-verifier` #82 completed SUCCESS; its inspect job and all workflow steps completed successfully.
-- Intermediate tree-write commits were corrected before this final verified SHA; the final tree was independently compared against the prior verified baseline and only the intended RPC/test files differ.
-- Live execution remains disabled.
-- Next gate: continue P1 RPC/data-plane hardening only after this governance reconciliation checkpoint is terminal-green.
