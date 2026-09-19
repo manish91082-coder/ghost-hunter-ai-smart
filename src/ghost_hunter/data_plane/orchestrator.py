@@ -8,6 +8,8 @@ from .chain import PolygonChain
 from .discovery import DiscoveryEngine
 from .rpc import MultiRPC, RPCError
 from .reorg import CanonicalCoordinator, CanonicalHead
+from .scanner import AdaptiveLogScanner
+from .quickswap import QuickSwapAdapter
 from .store import DiscoveryStore
 
 
@@ -26,12 +28,16 @@ class DataPlane:
     discovery: DiscoveryEngine
     store: DiscoveryStore
     canonical: CanonicalCoordinator
+    scanner: AdaptiveLogScanner | None = None
+    quickswap: QuickSwapAdapter | None = None
 
     @classmethod
     def build(cls, rpc: MultiRPC, store_path: str = ":memory:") -> "DataPlane":
         cache = StateCache()
         store = DiscoveryStore(store_path)
-        return cls(rpc, PolygonChain(rpc), cache, DiscoveryEngine(cache), store, CanonicalCoordinator(store))
+        scanner = AdaptiveLogScanner(rpc)
+        quickswap = QuickSwapAdapter(rpc, cache)
+        return cls(rpc, PolygonChain(rpc), cache, DiscoveryEngine(cache), store, CanonicalCoordinator(store), scanner, quickswap)
 
     async def bootstrap(self) -> int:
         chain_id = await self.chain.chain_id()
@@ -48,6 +54,11 @@ class DataPlane:
             )
         return chain_id
 
+    async def _process_canonical_block(self, block) -> None:
+        """Run discovery only after the block is canonical and durable."""
+        if self.scanner is not None and self.quickswap is not None:
+            await self.quickswap.process_block(self.scanner, self.store, block.number)
+
     async def run_heads(self, handler, poll_interval: float = 0.25) -> None:
         await self.bootstrap()
         async for block in self.chain.head_poll(poll_interval):
@@ -57,8 +68,12 @@ class DataPlane:
             if not accepted:
                 if replay_start is None:
                     raise RuntimeError("canonical discontinuity requires a replay start")
-                await self.replay_range(replay_start, block.number, handler, expected_end_hash=block.hash)
+                async def replay_handler(replayed_block):
+                    await self._process_canonical_block(replayed_block)
+                    await handler(replayed_block)
+                await self.replay_range(replay_start, block.number, replay_handler, expected_end_hash=block.hash)
                 continue
+            await self._process_canonical_block(block)
             await handler(block)
 
     async def replay_range(
@@ -110,6 +125,7 @@ class DataPlane:
                 if replay_start is None:
                     raise RuntimeError("canonical discontinuity requires a replay start")
                 async def replay_handler(replayed_block):
+                    await self._process_canonical_block(replayed_block)
                     await handler(
                         HeadContext(
                             block=replayed_block,
@@ -119,6 +135,7 @@ class DataPlane:
                     )
                 await self.replay_range(replay_start, block.number, replay_handler)
                 continue
+            await self._process_canonical_block(block)
             await handler(HeadContext(block=block, accepted=True, replay_start=None))
 
     async def critical_read(self, method: str, params: list | None = None, quorum: int = 2) -> object:
