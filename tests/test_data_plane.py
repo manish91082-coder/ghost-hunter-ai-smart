@@ -252,3 +252,64 @@ async def test_replay_handler_failure_rolls_back_partial_canonical_promotion(tmp
     assert store.latest_canonical_head() == (7, "h7", "h6")
     assert coordinator.guard.head == coordinator.guard.head.__class__(7, "h7", "h6")
     assert store.canonical_records() == []
+
+
+@pytest.mark.asyncio
+async def test_reorg_replay_end_to_end_reconstructs_and_processes_replacement_chain(tmp_path):
+    """Exercise live discontinuity -> durable rewind -> replacement replay end-to-end."""
+    from ghost_hunter.data_plane.models import BlockState
+    from ghost_hunter.data_plane.orchestrator import DataPlane
+    from ghost_hunter.data_plane.reorg import CanonicalCoordinator
+    from ghost_hunter.data_plane.store import DiscoveryStore
+
+    store = DiscoveryStore(tmp_path / "e2e-replay.sqlite")
+    for number, block_hash, parent_hash in [
+        (7, "h7", "h6"),
+        (8, "old8", "h7"),
+        (9, "old9", "old8"),
+        (10, "old10", "old9"),
+    ]:
+        store.record_block(number, block_hash, parent_hash)
+
+    class FakeChain:
+        CHAIN_ID = 137
+
+        async def chain_id(self):
+            return 137
+
+        async def head_poll(self, _interval):
+            yield BlockState(11, "fork11", "wrong", 0, None, 0)
+
+        async def block_by_number(self, number):
+            return {
+                8: BlockState(8, "new8", "h7", 0, None, 0),
+                9: BlockState(9, "new9", "new8", 0, None, 0),
+                10: BlockState(10, "new10", "new9", 0, None, 0),
+                11: BlockState(11, "new11", "new10", 0, None, 0),
+            }[number]
+
+    coordinator = CanonicalCoordinator(store, overlap=3)
+    plane = DataPlane.__new__(DataPlane)
+    plane.chain = FakeChain()
+    plane.store = store
+    plane.cache = StateCache()
+    plane.canonical = coordinator
+    plane.scanner = None
+    plane.quickswap = None
+
+    processed = []
+    async def process(block):
+        processed.append(block.number)
+
+    plane._process_canonical_block = process
+
+    seen = []
+    async def handler(block):
+        seen.append(block.number)
+
+    await plane.run_heads(handler, poll_interval=0)
+
+    assert processed == [8, 9, 10, 11]
+    assert seen == [8, 9, 10, 11]
+    assert store.latest_canonical_head() == (11, "new11", "new10")
+    assert coordinator.guard.head == coordinator.guard.head.__class__(11, "new11", "new10")
