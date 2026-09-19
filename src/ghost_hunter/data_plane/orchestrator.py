@@ -106,13 +106,22 @@ class DataPlane:
         if expected_end_hash is not None and (not blocks or blocks[-1].hash != expected_end_hash):
             raise RuntimeError("replay chain does not match observed canonical head")
 
-        for block in blocks:
-            accepted = self.canonical.record_replayed_block(
-                CanonicalHead(block.number, block.hash, block.parent_hash)
-            )
-            if not accepted:
-                raise RuntimeError("replay block rejected by canonical coordinator")
-            await handler(block)
+        try:
+            for block in blocks:
+                accepted = self.canonical.record_replayed_block(
+                    CanonicalHead(block.number, block.hash, block.parent_hash)
+                )
+                if not accepted:
+                    raise RuntimeError("replay block rejected by canonical coordinator")
+                await handler(block)
+        except Exception:
+            self.canonical.abort_replay(start)
+            if hasattr(self, "store") and hasattr(self, "cache"):
+                self.cache.restore(
+                    self.store.canonical_token_snapshots(),
+                    self.store.canonical_pool_snapshots(),
+                )
+            raise
 
     async def run_heads_context(self, handler, poll_interval: float = 0.25) -> None:
         """Run heads while explicitly propagating canonical/replay decisions."""

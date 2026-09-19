@@ -198,3 +198,57 @@ async def test_head_context_replay_fails_closed_when_observed_head_hash_differs(
         await plane.run_heads_context(handler, poll_interval=0)
     assert len(seen) == 1
     assert seen[0].block.number == 10
+
+
+@pytest.mark.asyncio
+async def test_replay_handler_failure_rolls_back_partial_canonical_promotion(tmp_path):
+    from ghost_hunter.data_plane.models import BlockState
+    from ghost_hunter.data_plane.orchestrator import DataPlane
+    from ghost_hunter.data_plane.reorg import CanonicalCoordinator
+    from ghost_hunter.data_plane.store import DiscoveryStore
+
+    store = DiscoveryStore(tmp_path / "replay.sqlite")
+    for number, block_hash, parent_hash in [
+        (7, "h7", "h6"),
+        (8, "old8", "h7"),
+        (9, "old9", "old8"),
+        (10, "old10", "old9"),
+    ]:
+        store.record_block(number, block_hash, parent_hash)
+    coordinator = CanonicalCoordinator(store, overlap=3)
+    accepted, replay_start = coordinator.observe(BlockState(11, "fork11", "wrong", 0, None, 0))
+    assert accepted is False
+    assert replay_start == 8
+
+    class FakeChain:
+        async def chain_id(self):
+            return 137
+
+        async def block_by_number(self, number):
+            return {
+                8: BlockState(8, "new8", "h7", 0, None, 0),
+                9: BlockState(9, "new9", "new8", 0, None, 0),
+                10: BlockState(10, "new10", "new9", 0, None, 0),
+                11: BlockState(11, "new11", "new10", 0, None, 0),
+            }[number]
+
+    plane = DataPlane.__new__(DataPlane)
+    plane.chain = FakeChain()
+    plane.store = store
+    plane.cache = StateCache()
+    plane.canonical = coordinator
+
+    seen = []
+
+    async def handler(block):
+        seen.append(block.number)
+        if block.number == 9:
+            raise RuntimeError("processing failed")
+
+    with pytest.raises(RuntimeError, match="processing failed"):
+        await plane.replay_range(8, 11, handler, expected_end_hash="new11")
+
+    assert seen == [8, 9]
+    assert store.latest_canonical_head() == (7, "h7", "h6")
+    assert coordinator.guard.head == coordinator.guard.head.__class__(7, "h7", "h6")
+    assert store.canonical_records() == []

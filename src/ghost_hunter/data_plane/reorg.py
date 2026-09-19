@@ -69,3 +69,11 @@ class CanonicalCoordinator:
             return False
         self.store.record_block(head.number, head.hash, head.parent_hash)
         return True
+
+    def abort_replay(self, replay_start: int) -> None:
+        """Roll back a failed replay and reconstruct the durable canonical head."""
+        self.store.rewind_from(replay_start)
+        durable = self.store.latest_canonical_head()
+        self.guard.head = (
+            CanonicalHead(*durable) if durable is not None else None
+        )
