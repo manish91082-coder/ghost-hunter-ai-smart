@@ -92,9 +92,8 @@ class MultiRPC:
     def _ordered(self, capability: str | None = None) -> list[RPCProvider]:
         candidates = [p for p in self.providers if p.available and (capability is None or not p.capabilities or capability in p.capabilities)]
         if not candidates:
-            candidates = [p for p in self.providers if p.state != "disabled"]
-        if not candidates:
-            raise RPCError("no usable RPC providers remain")
+            requirement = f" for capability {capability!r}" if capability is not None else ""
+            raise RPCError(f"no usable RPC providers remain{requirement}")
         return sorted(candidates, key=lambda p: p.score)
 
     async def _post(self, provider: RPCProvider, payload: Any) -> Any:
