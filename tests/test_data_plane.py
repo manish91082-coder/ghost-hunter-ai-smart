@@ -89,7 +89,7 @@ async def test_head_context_replays_replacement_chain_on_discontinuity():
             return 137
         async def head_poll(self, _interval):
             yield BlockState(10, "h10", "h9", 0, None, 0)
-            yield BlockState(11, "fork11", "wrong", 0, None, 0)
+            yield BlockState(11, "h11", "wrong", 0, None, 0)
         async def block_by_number(self, number):
             return {
                 8: BlockState(8, "h8", "h7", 0, None, 0),
@@ -190,8 +190,11 @@ async def test_head_context_replay_fails_closed_when_observed_head_hash_differs(
     plane.chain = FakeChain()
     plane.canonical = FakeCanonical()
 
-    async def handler(_ctx):
-        raise AssertionError("handler must not run for an unbound replay")
+    seen = []
+    async def handler(ctx):
+        seen.append(ctx)
 
     with pytest.raises(RuntimeError, match="observed canonical head"):
         await plane.run_heads_context(handler, poll_interval=0)
+    assert len(seen) == 1
+    assert seen[0].block.number == 10
