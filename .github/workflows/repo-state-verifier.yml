@@ -32,6 +32,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           EXPECTED_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
           RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || '' }}
+          CURRENT_RUN_ID: ${{ github.run_id }}
         run: python scripts/verify_repo_state.py
       - name: Upload machine-readable state
         if: always()
