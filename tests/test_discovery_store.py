@@ -126,9 +126,9 @@ def test_reorg_restart_reconstructs_only_replacement_fork_state():
 
             store.record_block(10, "new10", "h9")
             store.record_block(11, "new11", "new10")
-            new_token = token(11, "NEW").__class__("0xNEWTOKEN", 18, "NEW", "code-11", 11, "quorum", 0.99)
+            new_token = token(11, "NEW").__class__("0xnewtoken", 18, "NEW", "code-11", 11, "quorum", 0.99)
             new_pool = pool(11, {"reserve0": 7, "reserve1": 11}).__class__(
-                "0xNEWPOOL", "quickswap", "v2", "0xNEWTOKEN", "0xOTHER", 11,
+                "0xnewpool", "quickswap", "v2", "0xnewtoken", "0xother", 11,
                 {"reserve0": 7, "reserve1": 11}, "state-11", "quorum", 0.99
             )
             assert store.record_token_snapshot(new_token)
