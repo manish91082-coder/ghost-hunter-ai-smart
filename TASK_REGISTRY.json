@@ -1,0 +1,99 @@
+{
+  "schema": "ghost-hunter.task-registry.v3",
+  "task_id_format": "GH-TASK-NNNN",
+  "identity_source": "Immutable GH-TASK-NNNN token in commit message",
+  "verification_rule": "A task is verified only when its exact implementation SHA is on main, the matching data-plane-ci run is terminal-success, all its jobs succeed, and no check run for that SHA is non-success.",
+  "tasks": [
+    {
+      "id": "GH-TASK-0005",
+      "title": "Live head and reorg replay integration",
+      "commit": "8305fefd155e6189ffb3ce8a7d9ff7853a80f256",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0006",
+      "title": "Durable snapshot lifecycle",
+      "commit": "882c59aaea3d223672924abb4fdccf0259f9fc55",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0007",
+      "title": "Canonical block ancestry hardening and verifier race repair",
+      "commit": "2b3b004ac6ac9c5ba9cf79fb9f8e2fe5401f48a1",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0008",
+      "title": "Bind reorg replay to observed canonical head",
+      "commit": "d63e5c9a0d636d2daed50c7fa10a10e79e141d29",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0009",
+      "title": "Bind canonical replay to durable QuickSwap discovery state",
+      "commit": "398c0f75523d7cc0bacf5061a8b8df3ec8cdd8d4",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0010",
+      "title": "Canonical reorg and restart reconstruction hardening",
+      "commit": "64ba74e6cd8a7cb4a6d30c2b9df43ea693c6a215",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0011",
+      "title": "Canonical discovery reconstruction hardening",
+      "commit": "29315dc8def822f7cb66b9bc34a088d4a5827972",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0012",
+      "title": "Context replay terminal-head binding",
+      "commit": "34aaf05072af111e8f53c01efd52b3b62765816f",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0013",
+      "title": "Replay processing failure-atomicity",
+      "commit": "d041c037caaacfa07f914b5c62b378585a08e019",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0014",
+      "title": "Synchronize verified task registry",
+      "commit": "6e657d84506b7aa6a86b2bf68ae69a38ee898cfd",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0015",
+      "title": "Synchronize PROJECT_STATUS with verified history",
+      "commit": "62ff605b7e9f4a92bf42d4c05e2a97f72810f958",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0016",
+      "title": "End-to-end canonical reorg replay regression",
+      "commit": "8fbf958ce34f65de637cddb7b5154f226e47796a",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0017",
+      "title": "Exercise QuickSwap persistence during reorg replay",
+      "commit": "78cc445e7ecd8e8457f8e8dd7fbc9a0f78402067",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0018",
+      "title": "Reorg-safe snapshot replacement and persistence failure atomicity",
+      "commit": "b3e561f3b436891f2ed66e6a11330d18dc9e49c3",
+      "state": "verified"
+    }
+,
+    {
+      "id": "GH-TASK-0020",
+      "title": "Audit RPC failure boundaries and replay idempotence",
+      "commit": "7ba089d4c20d12b0bf0a6329f0f61270a302dd5a",
+      "state": "verified"
+    }
+  ]
+}
