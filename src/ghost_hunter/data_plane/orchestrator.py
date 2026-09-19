@@ -45,6 +45,11 @@ class DataPlane:
             accepted, replay_start = self.canonical.observe(
                 CanonicalHead(block.number, block.hash, block.parent_hash)
             )
+            if not accepted:
+                if replay_start is None:
+                    raise RuntimeError("canonical discontinuity requires a replay start")
+                await self.replay_range(replay_start, block.number, handler)
+                continue
             await handler(block)
 
     async def replay_range(self, start: int, end: int, handler) -> None:
@@ -74,7 +79,20 @@ class DataPlane:
             accepted, replay_start = self.canonical.observe(
                 CanonicalHead(block.number, block.hash, block.parent_hash)
             )
-            await handler(HeadContext(block=block, accepted=accepted, replay_start=replay_start))
+            if not accepted:
+                if replay_start is None:
+                    raise RuntimeError("canonical discontinuity requires a replay start")
+                async def replay_handler(replayed_block):
+                    await handler(
+                        HeadContext(
+                            block=replayed_block,
+                            accepted=True,
+                            replay_start=None,
+                        )
+                    )
+                await self.replay_range(replay_start, block.number, replay_handler)
+                continue
+            await handler(HeadContext(block=block, accepted=True, replay_start=None))
 
     async def critical_read(self, method: str, params: list | None = None, quorum: int = 2) -> object:
         return await self.rpc.quorum_call(method, params, quorum=quorum)
