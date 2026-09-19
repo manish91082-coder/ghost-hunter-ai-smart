@@ -8,6 +8,10 @@ from typing import Any
 from .models import PoolState, TokenState
 
 
+# Restart reconstruction deliberately restores only canonical snapshots.
+
+
+
 @dataclass
 class StateCache:
     tokens: dict[str, TokenState]
@@ -27,6 +31,18 @@ class StateCache:
 
     def put_pool(self, state: PoolState) -> None:
         self.pools[state.address.lower()] = state
+
+    def restore(self, tokens: list[TokenState], pools: list[PoolState]) -> None:
+        """Reconstruct cache from durable canonical snapshots."""
+        self.tokens.clear()
+        self.pools.clear()
+        for state in tokens:
+            self.put_token(state)
+        for state in pools:
+            self.put_pool(state)
+
+    def snapshot(self) -> tuple[list[TokenState], list[PoolState]]:
+        return list(self.tokens.values()), list(self.pools.values())
 
     def affected_pools(self, addresses: set[str]) -> list[PoolState]:
         normalized = {a.lower() for a in addresses}
