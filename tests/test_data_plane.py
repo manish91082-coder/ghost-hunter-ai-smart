@@ -152,3 +152,46 @@ async def test_replay_rejects_replacement_chain_with_wrong_terminal_hash():
     with pytest.raises(RuntimeError, match="observed canonical head"):
         await plane.replay_range(8, 9, handler, expected_end_hash="unexpected")
     assert seen == []
+
+
+@pytest.mark.asyncio
+async def test_head_context_replay_fails_closed_when_observed_head_hash_differs():
+    from ghost_hunter.data_plane.models import BlockState
+    from ghost_hunter.data_plane.orchestrator import DataPlane
+
+    class FakeChain:
+        CHAIN_ID = 137
+        async def chain_id(self):
+            return 137
+        async def head_poll(self, _interval):
+            yield BlockState(10, "h10", "h9", 0, None, 0)
+            # The observed rejected head is fork11, but deterministic replay
+            # returns a different block at the same height.
+            yield BlockState(11, "observed-fork11", "wrong", 0, None, 0)
+        async def block_by_number(self, number):
+            return {
+                8: BlockState(8, "h8", "h7", 0, None, 0),
+                9: BlockState(9, "h9", "h8", 0, None, 0),
+                10: BlockState(10, "h10", "h9", 0, None, 0),
+                11: BlockState(11, "different11", "h10", 0, None, 0),
+            }[number]
+
+    class FakeCanonical:
+        def __init__(self):
+            self.calls = 0
+        def observe(self, head):
+            self.calls += 1
+            return (True, None) if self.calls == 1 else (False, 8)
+
+        def record_replayed_block(self, _head):
+            raise AssertionError("mismatched replay must not reach canonical persistence")
+
+    plane = DataPlane.__new__(DataPlane)
+    plane.chain = FakeChain()
+    plane.canonical = FakeCanonical()
+
+    async def handler(_ctx):
+        raise AssertionError("handler must not run for an unbound replay")
+
+    with pytest.raises(RuntimeError, match="observed canonical head"):
+        await plane.run_heads_context(handler, poll_interval=0)
