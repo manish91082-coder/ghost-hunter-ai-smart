@@ -112,6 +112,13 @@ class DiscoveryStore:
         ).fetchone()
         if existing and existing["hash"] != block_hash:
             self.rewind_from(number)
+        if number > 0:
+            previous = self._db.execute(
+                "SELECT hash FROM blocks WHERE number=? AND canonical=1",
+                (number - 1,),
+            ).fetchone()
+            if previous is None or previous["hash"] != parent_hash:
+                raise ValueError("canonical block parent does not match durable predecessor")
         self._db.execute(
             """
             INSERT INTO blocks(number, hash, parent_hash, canonical)
@@ -243,13 +250,17 @@ class DiscoveryStore:
         if not row:
             return None
         number = int(row["number"])
-        if number > 0:
+        current = number
+        child_parent = row["parent_hash"]
+        while current > 0:
             previous = self._db.execute(
-                "SELECT hash FROM blocks WHERE number=? AND canonical=1",
-                (number - 1,),
+                "SELECT hash,parent_hash FROM blocks WHERE number=? AND canonical=1",
+                (current - 1,),
             ).fetchone()
-            if not previous or previous["hash"] != row["parent_hash"]:
+            if not previous or previous["hash"] != child_parent:
                 raise RuntimeError("durable canonical chain is inconsistent")
+            child_parent = previous["parent_hash"]
+            current -= 1
         return number, row["hash"], row["parent_hash"]
 
     def get(self, candidate_key: str) -> DiscoveryRecord | None:
