@@ -57,6 +57,12 @@
       "title": "Replay processing failure-atomicity",
       "commit": "d041c037caaacfa07f914b5c62b378585a08e019",
       "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0014",
+      "title": "Synchronize verified task registry",
+      "commit": "6e657d84506b7aa6a86b2bf68ae69a38ee898cfd",
+      "state": "verified"
     }
   ]
 }
