@@ -379,3 +379,12 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - Verified checkpoint before this memory update: c87dd5903a76254098be03d0c5754407c677df49, data-plane-ci #117 SUCCESS, repo-state-verifier #11 SUCCESS, 48 pytest tests passed.
 - Status checkpoint was persisted separately at 6339d7cd46f10b8eb6162b7dad0affe29146cdc4 and passed data-plane-ci #118 plus repo-state-verifier #12.
 - Next: integrate replay directly into live head/reorg orchestration and add durable normalized pool/token snapshots for safe cache reconstruction.
+
+
+## GH-TASK-0005 — Verified Live Head/Reorg Replay Control
+- Rejected canonical heads are now routed into `replay_range()` automatically.
+- Replay uses exact block reads, parent-hash continuity, canonical coordinator acceptance, and the existing handler path.
+- Context mode emits replayed blocks as accepted `HeadContext` events.
+- CI caught stale test fixtures twice, both corrected and re-run through the locked GitHub verification gate.
+- Verified checkpoint: `8305fefd155e6189ffb3ce8a7d9ff7853a80f256`, data-plane-ci #124 SUCCESS, repo-state-verifier #18 SUCCESS.
+- Next gate: durable normalized pool/token snapshots and cache reconstruction from SQLite, then end-to-end restart/reorg discovery replay.
