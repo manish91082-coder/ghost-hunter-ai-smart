@@ -104,3 +104,43 @@ def test_latest_canonical_head_fails_on_deep_ancestry_corruption():
         store._db.commit()
         with pytest.raises(RuntimeError, match="inconsistent"):
             store.latest_canonical_head()
+
+def test_reorg_restart_reconstructs_only_replacement_fork_state():
+    with tempfile.TemporaryDirectory() as d:
+        path = Path(d) / "reorg-restart.sqlite"
+
+        with DiscoveryStore(path) as store:
+            store.record_block(9, "h9", "h8")
+            store.record_block(10, "old10", "h9")
+            old_token = token(10, "OLD")
+            old_pool = pool(10, {"reserve0": 100, "reserve1": 200})
+            store.record_token_snapshot(old_token)
+            store.record_pool_snapshot(old_pool)
+
+            store.rewind_from(10)
+            assert store.canonical_token_snapshots() == []
+            assert store.canonical_pool_snapshots() == []
+
+            store.record_block(10, "new10", "h9")
+            store.record_block(11, "new11", "new10")
+            new_token = token(11, "NEW")
+            new_pool = pool(11, {"reserve0": 7, "reserve1": 11})
+            assert store.record_token_snapshot(new_token)
+            assert store.record_pool_snapshot(new_pool)
+            assert store.latest_canonical_head() == (11, "new11", "new10")
+
+            store._db.execute("UPDATE token_snapshots SET status='canonical' WHERE address=?", (old_token.address.lower(),))
+            store._db.execute("UPDATE pool_snapshots SET status='canonical' WHERE address=?", (old_pool.address.lower(),))
+            store._db.commit()
+
+        with DiscoveryStore(path) as reopened:
+            assert reopened.canonical_token_snapshots() == [
+                new_token.__class__("0xtoken", 18, "NEW", "code-11", 11, "quorum", 0.99)
+            ]
+            assert reopened.canonical_pool_snapshots() == [
+                new_pool.__class__(
+                    "0xpool", "quickswap", "v2", "0xtoken", "0xother", 11,
+                    {"reserve0": 7, "reserve1": 11}, "state-11", "quorum", 0.99
+                )
+            ]
+            assert reopened.latest_canonical_head() == (11, "new11", "new10")

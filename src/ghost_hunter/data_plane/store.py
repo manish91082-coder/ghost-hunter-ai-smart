@@ -80,20 +80,33 @@ class DiscoveryStore:
                 ON discoveries(pool_address);
             CREATE TABLE IF NOT EXISTS token_snapshots (
                 address TEXT PRIMARY KEY, decimals INTEGER, symbol TEXT, code_hash TEXT,
-                block_number INTEGER NOT NULL, source TEXT NOT NULL, confidence REAL NOT NULL,
+                block_number INTEGER NOT NULL, block_hash TEXT NOT NULL,
+                source TEXT NOT NULL, confidence REAL NOT NULL,
                 status TEXT NOT NULL CHECK(status IN ('canonical','orphaned'))
             );
             CREATE TABLE IF NOT EXISTS pool_snapshots (
                 address TEXT PRIMARY KEY, venue TEXT NOT NULL, pool_type TEXT NOT NULL,
                 token0 TEXT NOT NULL, token1 TEXT, block_number INTEGER NOT NULL,
-                state_json TEXT NOT NULL, state_hash TEXT NOT NULL, source TEXT NOT NULL,
+                block_hash TEXT NOT NULL, state_json TEXT NOT NULL, state_hash TEXT NOT NULL,
+                source TEXT NOT NULL,
                 confidence REAL NOT NULL, status TEXT NOT NULL CHECK(status IN ('canonical','orphaned'))
             );
             CREATE INDEX IF NOT EXISTS idx_token_snapshots_block ON token_snapshots(block_number);
             CREATE INDEX IF NOT EXISTS idx_pool_snapshots_block ON pool_snapshots(block_number);
             """
         )
+        self._ensure_snapshot_block_hash_columns()
         self._db.commit()
+
+    def _ensure_snapshot_block_hash_columns(self) -> None:
+        """Backfill snapshot fork identity for databases created before GH-TASK-0010."""
+        for table in ("token_snapshots", "pool_snapshots"):
+            columns = {row["name"] for row in self._db.execute(f"PRAGMA table_info({table})").fetchall()}
+            if "block_hash" not in columns:
+                self._db.execute(f"ALTER TABLE {table} ADD COLUMN block_hash TEXT")
+                self._db.execute(
+                    f"UPDATE {table} SET block_hash=(SELECT hash FROM blocks WHERE blocks.number={table}.block_number) WHERE block_hash IS NULL"
+                )
 
     def close(self) -> None:
         self._db.close()
@@ -235,13 +248,13 @@ class DiscoveryStore:
         ).fetchone()
         if existing and int(existing["block_number"]) > state.block_number:
             return False
-        self._db.execute("""INSERT INTO token_snapshots(address,decimals,symbol,code_hash,block_number,source,confidence,status)
+        self._db.execute("""INSERT INTO token_snapshots(address,decimals,symbol,code_hash,block_number,block_hash,source,confidence,status)
             VALUES(?,?,?,?,?,?,?,'canonical')
             ON CONFLICT(address) DO UPDATE SET decimals=excluded.decimals,symbol=excluded.symbol,
             code_hash=excluded.code_hash,block_number=excluded.block_number,source=excluded.source,
             confidence=excluded.confidence,status='canonical'""",
             (state.address.lower(), state.decimals, state.symbol, state.code_hash,
-             state.block_number, state.source, state.confidence),
+             state.block_number, self.canonical_block_hash(state.block_number), state.source, state.confidence),
         )
         return True
 
@@ -252,15 +265,16 @@ class DiscoveryStore:
         if existing and int(existing["block_number"]) > state.block_number:
             return False
         payload = json.dumps(dict(state.state), sort_keys=True, separators=(",", ":"), default=str)
-        self._db.execute("""INSERT INTO pool_snapshots(address,venue,pool_type,token0,token1,block_number,state_json,state_hash,source,confidence,status)
-            VALUES(?,?,?,?,?,?,?,?,?,?,'canonical')
+        self._db.execute("""INSERT INTO pool_snapshots(address,venue,pool_type,token0,token1,block_number,block_hash,state_json,state_hash,source,confidence,status)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,'canonical')
             ON CONFLICT(address) DO UPDATE SET venue=excluded.venue,pool_type=excluded.pool_type,
             token0=excluded.token0,token1=excluded.token1,block_number=excluded.block_number,
             state_json=excluded.state_json,state_hash=excluded.state_hash,source=excluded.source,
             confidence=excluded.confidence,status='canonical'""",
             (state.address.lower(), state.venue, state.pool_type, state.token0.lower(),
-             state.token1.lower() if state.token1 else None, state.block_number, payload,
-             state.state_hash, state.source, state.confidence),
+             state.token1.lower() if state.token1 else None, state.block_number,
+             self.canonical_block_hash(state.block_number), payload, state.state_hash,
+             state.source, state.confidence),
         )
         return True
 
@@ -277,7 +291,8 @@ class DiscoveryStore:
             ON CONFLICT(address) DO UPDATE SET decimals=excluded.decimals,symbol=excluded.symbol,
             code_hash=excluded.code_hash,block_number=excluded.block_number,source=excluded.source,
             confidence=excluded.confidence,status='canonical'""",
-            (state.address.lower(),state.decimals,state.symbol,state.code_hash,state.block_number,state.source,state.confidence))
+            (state.address.lower(),state.decimals,state.symbol,state.code_hash,state.block_number,
+             self.canonical_block_hash(state.block_number),state.source,state.confidence))
         self._db.commit()
         return True
 
@@ -290,15 +305,16 @@ class DiscoveryStore:
         if existing and int(existing["block_number"]) > state.block_number:
             return False
         payload = json.dumps(dict(state.state), sort_keys=True, separators=(",", ":"), default=str)
-        self._db.execute("""INSERT INTO pool_snapshots(address,venue,pool_type,token0,token1,block_number,state_json,state_hash,source,confidence,status)
-            VALUES(?,?,?,?,?,?,?,?,?,?,'canonical')
+        self._db.execute("""INSERT INTO pool_snapshots(address,venue,pool_type,token0,token1,block_number,block_hash,state_json,state_hash,source,confidence,status)
+            VALUES(?,?,?,?,?,?,?,?,?,?,?,'canonical')
             ON CONFLICT(address) DO UPDATE SET venue=excluded.venue,pool_type=excluded.pool_type,
             token0=excluded.token0,token1=excluded.token1,block_number=excluded.block_number,
             state_json=excluded.state_json,state_hash=excluded.state_hash,source=excluded.source,
             confidence=excluded.confidence,status='canonical'""",
             (state.address.lower(),state.venue,state.pool_type,state.token0.lower(),
-             state.token1.lower() if state.token1 else None,state.block_number,payload,
-             state.state_hash,state.source,state.confidence))
+             state.token1.lower() if state.token1 else None,state.block_number,
+             self.canonical_block_hash(state.block_number),payload,state.state_hash,
+             state.source,state.confidence))
         self._db.commit()
         return True
 
@@ -391,9 +407,34 @@ class DiscoveryStore:
         return [DiscoveryRecord(**dict(row)) for row in rows]
 
     def canonical_token_snapshots(self) -> list[TokenState]:
-        rows = self._db.execute("SELECT address,decimals,symbol,code_hash,block_number,source,confidence FROM token_snapshots WHERE status='canonical' ORDER BY address").fetchall()
+        rows = self._db.execute(
+            """
+            SELECT s.address,s.decimals,s.symbol,s.code_hash,s.block_number,s.source,s.confidence
+            FROM token_snapshots s
+            JOIN blocks b ON b.number=s.block_number AND b.canonical=1 AND b.hash=s.block_hash
+            WHERE s.status='canonical'
+            ORDER BY s.address
+            """
+        ).fetchall()
         return [TokenState(**dict(row)) for row in rows]
 
     def canonical_pool_snapshots(self) -> list[PoolState]:
-        rows = self._db.execute("SELECT address,venue,pool_type,token0,token1,block_number,state_json,state_hash,source,confidence FROM pool_snapshots WHERE status='canonical' ORDER BY address").fetchall()
-        return [PoolState(address=row["address"],venue=row["venue"],pool_type=row["pool_type"],token0=row["token0"],token1=row["token1"],block_number=row["block_number"],state=json.loads(row["state_json"]),state_hash=row["state_hash"],source=row["source"],confidence=row["confidence"]) for row in rows]
+        rows = self._db.execute(
+            """
+            SELECT s.address,s.venue,s.pool_type,s.token0,s.token1,s.block_number,
+                   s.state_json,s.state_hash,s.source,s.confidence
+            FROM pool_snapshots s
+            JOIN blocks b ON b.number=s.block_number AND b.canonical=1 AND b.hash=s.block_hash
+            WHERE s.status='canonical'
+            ORDER BY s.address
+            """
+        ).fetchall()
+        return [
+            PoolState(
+                address=row["address"], venue=row["venue"], pool_type=row["pool_type"],
+                token0=row["token0"], token1=row["token1"], block_number=row["block_number"],
+                state=json.loads(row["state_json"]), state_hash=row["state_hash"],
+                source=row["source"], confidence=row["confidence"]
+            )
+            for row in rows
+        ]
