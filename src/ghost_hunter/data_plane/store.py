@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .models import PoolState, TokenState
+
 
 @dataclass(frozen=True)
 class DiscoveryRecord:
@@ -76,6 +78,19 @@ class DiscoveryStore:
                 ON discoveries(block_number);
             CREATE INDEX IF NOT EXISTS idx_discoveries_pool
                 ON discoveries(pool_address);
+            CREATE TABLE IF NOT EXISTS token_snapshots (
+                address TEXT PRIMARY KEY, decimals INTEGER, symbol TEXT, code_hash TEXT,
+                block_number INTEGER NOT NULL, source TEXT NOT NULL, confidence REAL NOT NULL,
+                status TEXT NOT NULL CHECK(status IN ('canonical','orphaned'))
+            );
+            CREATE TABLE IF NOT EXISTS pool_snapshots (
+                address TEXT PRIMARY KEY, venue TEXT NOT NULL, pool_type TEXT NOT NULL,
+                token0 TEXT NOT NULL, token1 TEXT, block_number INTEGER NOT NULL,
+                state_json TEXT NOT NULL, state_hash TEXT NOT NULL, source TEXT NOT NULL,
+                confidence REAL NOT NULL, status TEXT NOT NULL CHECK(status IN ('canonical','orphaned'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_token_snapshots_block ON token_snapshots(block_number);
+            CREATE INDEX IF NOT EXISTS idx_pool_snapshots_block ON pool_snapshots(block_number);
             """
         )
         self._db.commit()
@@ -156,6 +171,44 @@ class DiscoveryStore:
         self._db.commit()
         return True
 
+    def record_token_snapshot(self, state: TokenState) -> bool:
+        if state.block_number < 0:
+            raise ValueError("token snapshot requires a valid block number")
+        if self.canonical_block_hash(state.block_number) is None:
+            raise ValueError("token snapshot is not anchored to a canonical block")
+        existing = self._db.execute("SELECT block_number FROM token_snapshots WHERE address=?", (state.address.lower(),)).fetchone()
+        if existing and int(existing["block_number"]) > state.block_number:
+            return False
+        self._db.execute("""INSERT INTO token_snapshots(address,decimals,symbol,code_hash,block_number,source,confidence,status)
+            VALUES(?,?,?,?,?,?,?,'canonical')
+            ON CONFLICT(address) DO UPDATE SET decimals=excluded.decimals,symbol=excluded.symbol,
+            code_hash=excluded.code_hash,block_number=excluded.block_number,source=excluded.source,
+            confidence=excluded.confidence,status='canonical'""",
+            (state.address.lower(),state.decimals,state.symbol,state.code_hash,state.block_number,state.source,state.confidence))
+        self._db.commit()
+        return True
+
+    def record_pool_snapshot(self, state: PoolState) -> bool:
+        if state.block_number < 0:
+            raise ValueError("pool snapshot requires a valid block number")
+        if self.canonical_block_hash(state.block_number) is None:
+            raise ValueError("pool snapshot is not anchored to a canonical block")
+        existing = self._db.execute("SELECT block_number FROM pool_snapshots WHERE address=?", (state.address.lower(),)).fetchone()
+        if existing and int(existing["block_number"]) > state.block_number:
+            return False
+        payload = json.dumps(dict(state.state), sort_keys=True, separators=(",", ":"), default=str)
+        self._db.execute("""INSERT INTO pool_snapshots(address,venue,pool_type,token0,token1,block_number,state_json,state_hash,source,confidence,status)
+            VALUES(?,?,?,?,?,?,?,?,?,?,'canonical')
+            ON CONFLICT(address) DO UPDATE SET venue=excluded.venue,pool_type=excluded.pool_type,
+            token0=excluded.token0,token1=excluded.token1,block_number=excluded.block_number,
+            state_json=excluded.state_json,state_hash=excluded.state_hash,source=excluded.source,
+            confidence=excluded.confidence,status='canonical'""",
+            (state.address.lower(),state.venue,state.pool_type,state.token0.lower(),
+             state.token1.lower() if state.token1 else None,state.block_number,payload,
+             state.state_hash,state.source,state.confidence))
+        self._db.commit()
+        return True
+
     def rewind_from(self, block_number: int) -> int:
         """Mark all discoveries at/after a fork point orphaned and invalidate blocks."""
         cur = self._db.execute(
@@ -165,6 +218,8 @@ class DiscoveryStore:
         self._db.execute(
             "UPDATE blocks SET canonical=0 WHERE number>=?", (block_number,)
         )
+        self._db.execute("UPDATE token_snapshots SET status='orphaned' WHERE block_number>=? AND status='canonical'", (block_number,))
+        self._db.execute("UPDATE pool_snapshots SET status='orphaned' WHERE block_number>=? AND status='canonical'", (block_number,))
         self._db.commit()
         return cur.rowcount
 
@@ -229,3 +284,11 @@ class DiscoveryStore:
             """
         ).fetchall()
         return [DiscoveryRecord(**dict(row)) for row in rows]
+
+    def canonical_token_snapshots(self) -> list[TokenState]:
+        rows = self._db.execute("SELECT address,decimals,symbol,code_hash,block_number,source,confidence FROM token_snapshots WHERE status='canonical' ORDER BY address").fetchall()
+        return [TokenState(**dict(row)) for row in rows]
+
+    def canonical_pool_snapshots(self) -> list[PoolState]:
+        rows = self._db.execute("SELECT address,venue,pool_type,token0,token1,block_number,state_json,state_hash,source,confidence FROM pool_snapshots WHERE status='canonical' ORDER BY address").fetchall()
+        return [PoolState(address=row["address"],venue=row["venue"],pool_type=row["pool_type"],token0=row["token0"],token1=row["token1"],block_number=row["block_number"],state=json.loads(row["state_json"]),state_hash=row["state_hash"],source=row["source"],confidence=row["confidence"]) for row in rows]
