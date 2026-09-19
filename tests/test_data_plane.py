@@ -313,3 +313,117 @@ async def test_reorg_replay_end_to_end_reconstructs_and_processes_replacement_ch
     assert seen == [8, 9, 10, 11]
     assert store.latest_canonical_head() == (11, "new11", "new10")
     assert coordinator.guard.head == coordinator.guard.head.__class__(11, "new11", "new10")
+
+
+@pytest.mark.asyncio
+async def test_reorg_replay_runs_real_quickswap_persistence_path(tmp_path):
+    """Exercise replay through the real QuickSwap adapter and durable evidence store."""
+    from ghost_hunter.data_plane.models import BlockState, PoolState, TokenState
+    from ghost_hunter.data_plane.orchestrator import DataPlane
+    from ghost_hunter.data_plane.pool_events import PoolCreated
+    from ghost_hunter.data_plane.quickswap import DiscoveryCandidate, QuickSwapAdapter
+    from ghost_hunter.data_plane.reorg import CanonicalCoordinator
+    from ghost_hunter.data_plane.store import DiscoveryStore
+
+    store = DiscoveryStore(tmp_path / "quickswap-replay.sqlite")
+    for number, block_hash, parent_hash in [
+        (7, "h7", "h6"),
+        (8, "old8", "h7"),
+        (9, "old9", "old8"),
+        (10, "old10", "old9"),
+    ]:
+        store.record_block(number, block_hash, parent_hash)
+
+    old_candidate = DiscoveryCandidate(
+        PoolCreated(
+            "quickswap", "v2", "0x" + "1" * 40,
+            "0x" + "2" * 40, "0x" + "3" * 40, "0x" + "4" * 40, 1
+        ),
+        8, "oldtx", "old8", 0,
+    )
+    store.record_discovery_bundle(
+        __import__("ghost_hunter.data_plane.store", fromlist=["DiscoveryRecord"]).DiscoveryRecord(
+            candidate_key="old",
+            venue="quickswap", pool_type="v2", pool_address=old_candidate.created.pool,
+            block_number=8, block_hash="old8", transaction_hash="oldtx", log_index=0,
+            payload_hash=store.payload_hash({"old": True}),
+        ),
+        {"old": True},
+        PoolState("0x" + "4" * 40, "quickswap", "v2", "0x" + "2" * 40, "0x" + "3" * 40,
+                  8, {"reserve0": 1, "reserve1": 2}, "oldpool", "test", 1.0),
+        (
+            TokenState("0x" + "2" * 40, 18, "T0", "oldcode0", 8, "test", 1.0),
+            TokenState("0x" + "3" * 40, 18, "T1", "oldcode1", 8, "test", 1.0),
+        ),
+    )
+
+    class FakeChain:
+        async def chain_id(self):
+            return 137
+
+        async def head_poll(self, _interval):
+            yield BlockState(11, "new11", "new10", 0, None, 0)
+
+        async def block_by_number(self, number):
+            return {
+                8: BlockState(8, "new8", "h7", 0, None, 0),
+                9: BlockState(9, "new9", "new8", 0, None, 0),
+                10: BlockState(10, "new10", "new9", 0, None, 0),
+                11: BlockState(11, "new11", "new10", 0, None, 0),
+            }[number]
+
+    class FakeScanner:
+        async def scan(self, query):
+            if query.from_block == 8:
+                return [{"blockHash": "new8", "transactionHash": "newtx", "logIndex": "0x0"}]
+            return []
+
+    adapter = QuickSwapAdapter.__new__(QuickSwapAdapter)
+    adapter.cache = StateCache()
+    adapter.rejections = []
+    adapter.deployments = []
+    adapter._by_key = {}
+    adapter.rpc = None
+
+    candidate = DiscoveryCandidate(
+        PoolCreated(
+            "quickswap", "v2", "0x" + "1" * 40,
+            "0x" + "2" * 40, "0x" + "3" * 40, "0x" + "5" * 40, 2
+        ),
+        8, "newtx", "new8", 0,
+    )
+    adapter.log_query = lambda pool_type, start, end: {
+        "address": "0x" + "1" * 40, "topics": ["0xtopic"],
+        "fromBlock": hex(start), "toBlock": hex(end),
+    }
+    adapter.decode_log = lambda pool_type, log: candidate
+
+    async def reconcile(_candidate):
+        return _candidate.created
+    async def pool_state(_candidate, *, promote_cache=True):
+        return PoolState(
+            "0x" + "5" * 40, "quickswap", "v2", "0x" + "2" * 40, "0x" + "3" * 40,
+            8, {"reserve0": 10, "reserve1": 20}, "newpool", "test", 1.0
+        )
+    async def token_state(address, block_number, *, promote_cache=True):
+        return TokenState(address.lower(), 18, "T0" if address.endswith("2" * 40) else "T1",
+                          "newcode", block_number, "test", 1.0)
+
+    adapter.reconcile_candidate = reconcile
+    adapter.read_pool_state = pool_state
+    adapter._token_state = token_state
+
+    coordinator = CanonicalCoordinator(store, overlap=3)
+    plane = DataPlane(
+        rpc=None, chain=FakeChain(), cache=adapter.cache,
+        discovery=None, store=store, canonical=coordinator,
+        scanner=FakeScanner(), quickswap=adapter,
+    )
+    seen = []
+    await plane.run_heads(lambda block: seen.append(block.number), poll_interval=0)
+
+    assert seen == [8, 9, 10, 11]
+    assert store.latest_canonical_head() == (11, "new11", "new10")
+    assert store.canonical_records()
+    assert all(record.block_hash == "new8" for record in store.canonical_records())
+    assert any(record.block_hash == "old8" for record in store.orphaned_records())
