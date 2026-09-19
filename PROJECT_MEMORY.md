@@ -350,3 +350,7 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 
 ## 2026-09-19 Verifier Static Audit Correction
 - Post-commit static inspection caught a Python f-string quoting defect in the repository-wide inspector. The defect is being corrected before any GREEN claim.
+
+
+## 2026-09-19 Verifier Self-Check Isolation
+- Hardened the repository inspector so its own in-progress check cannot create a false failure while the inspector is running. Underlying CI/checks remain mandatory.

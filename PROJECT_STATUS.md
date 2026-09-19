@@ -381,3 +381,7 @@ Next:
 ## 2026-09-19 — Verifier Static Audit Correction
 - Static post-commit audit found a Python quoting defect in the new state inspector before its promotion gate could be reached.
 - Corrected the GitHub API error-message f-string quoting. This correction is part of GH-TASK-0003; the defective commit is not treated as verified.
+
+
+## 2026-09-19 — Verifier Self-Check Isolation
+- Static audit found that the verifier would see its own in-progress check while inspecting the same commit. The inspector now excludes its own `repo-state-verifier` check from the external-check gate while still requiring the underlying `data-plane-ci` checks to be terminal-success.

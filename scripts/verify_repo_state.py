@@ -63,8 +63,9 @@ def main():
     target_terminal = target_ok and target.get("status") == "completed"
     target_success = target_terminal and target.get("conclusion") == "success"
     jobs_ok = bool(job_rows) and all(j["status"]=="completed" and j["conclusion"]=="success" for j in job_rows)
-    bad_checks = [c for c in check_rows if c["status"] in NONTERMINAL or c["conclusion"] in BAD]
-    checks_ok = bool(check_rows) and not bad_checks and all(c["status"]=="completed" and c["conclusion"]=="success" for c in check_rows)
+    external_checks = [c for c in check_rows if c["name"] != "repo-state-verifier" and (not RUN_ID or str(RUN_ID) not in str(c.get("details_url") or ""))]
+    bad_checks = [c for c in external_checks if c["status"] in NONTERMINAL or c["conclusion"] in BAD]
+    checks_ok = bool(external_checks) and not bad_checks and all(c["status"]=="completed" and c["conclusion"]=="success" for c in external_checks)
     gate = {"main_points_to_expected_sha":main_sha==EXPECTED_SHA,"exact_ci_run_found":target_ok,"ci_terminal":target_terminal,"ci_success":target_success,"all_ci_jobs_success":jobs_ok,"no_non_success_check_run":checks_ok}
     task = task_id(commit.get("commit",{}).get("message",""))
     pr_for_commit=[{"number":p.get("number"),"title":p.get("title"),"state":p.get("state"),"draft":p.get("draft"),"url":p.get("html_url")} for p in pulls_commit]
@@ -75,7 +76,7 @@ def main():
         if r.get("name") == "repo-state-verifier": continue
         latest.setdefault(r.get("name"), slim_run(r))
     verified=all(gate.values())
-    report={"schema":"ghost-hunter.repo-state.v3","verified":verified,"verified_at":datetime.now(timezone.utc).isoformat(),"repository":{"full_name":REPO,"default_branch":repo.get("default_branch"),"visibility":repo.get("visibility"),"url":repo.get("html_url")},"main":{"sha":main_sha,"expected_sha":EXPECTED_SHA},"task":{"id":task,"commit_sha":EXPECTED_SHA,"message":commit.get("commit",{}).get("message",""),"url":commit.get("html_url")},"exact_ci_run":slim_run(target) if target else None,"jobs":job_rows,"artifacts":[{"name":a.get("name"),"expired":a.get("expired"),"size_in_bytes":a.get("size_in_bytes")} for a in artifacts],"check_runs":check_rows,"commit_statuses":status_rows,"pull_requests_for_commit":pr_for_commit,"open_pull_requests":open_prs,"open_issues":open_issues,"latest_main_workflow_runs":latest,"gate":gate,"notes":["GitHub is ground truth for committed/pushed state; uncommitted local IDE state is invisible to GitHub.","Green CI validates the repository commit but never authorizes live capital deployment.","Issues and PRs are reported as context and are never silently treated as completed implementation."]}
+    report={"schema":"ghost-hunter.repo-state.v3","verified":verified,"verified_at":datetime.now(timezone.utc).isoformat(),"repository":{"full_name":REPO,"default_branch":repo.get("default_branch"),"visibility":repo.get("visibility"),"url":repo.get("html_url")},"main":{"sha":main_sha,"expected_sha":EXPECTED_SHA},"task":{"id":task,"commit_sha":EXPECTED_SHA,"message":commit.get("commit",{}).get("message",""),"url":commit.get("html_url")},"exact_ci_run":slim_run(target) if target else None,"jobs":job_rows,"artifacts":[{"name":a.get("name"),"expired":a.get("expired"),"size_in_bytes":a.get("size_in_bytes")} for a in artifacts],"check_runs":check_rows,"external_check_runs":external_checks,"commit_statuses":status_rows,"pull_requests_for_commit":pr_for_commit,"open_pull_requests":open_prs,"open_issues":open_issues,"latest_main_workflow_runs":latest,"gate":gate,"notes":["GitHub is ground truth for committed/pushed state; uncommitted local IDE state is invisible to GitHub.","Green CI validates the repository commit but never authorizes live capital deployment.","Issues and PRs are reported as context and are never silently treated as completed implementation."]}
     OUT.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n",encoding="utf-8")
     summary=os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
