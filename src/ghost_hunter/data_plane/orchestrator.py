@@ -57,15 +57,28 @@ class DataPlane:
             if not accepted:
                 if replay_start is None:
                     raise RuntimeError("canonical discontinuity requires a replay start")
-                await self.replay_range(replay_start, block.number, handler)
+                await self.replay_range(replay_start, block.number, handler, expected_end_hash=block.hash)
                 continue
             await handler(block)
 
-    async def replay_range(self, start: int, end: int, handler) -> None:
-        """Replay an exact inclusive block range through canonical processing."""
+    async def replay_range(
+        self,
+        start: int,
+        end: int,
+        handler,
+        expected_end_hash: str | None = None,
+    ) -> None:
+        """Replay an exact inclusive range only after validating the whole chain.
+
+        When a replay is triggered by a rejected live head, ``expected_end_hash``
+        binds the replacement chain to that observed head. Validation happens
+        before canonical persistence or handler invocation so a mismatched RPC
+        view cannot partially promote an untrusted replacement chain.
+        """
         if start < 0 or end < start:
             raise ValueError("invalid replay range")
         await self.bootstrap()
+        blocks = []
         previous_hash: str | None = None
         for number in range(start, end + 1):
             block = await self.chain.block_by_number(number)
@@ -73,13 +86,18 @@ class DataPlane:
                 raise RuntimeError("replay returned the wrong block number")
             if previous_hash is not None and block.parent_hash != previous_hash:
                 raise RuntimeError("replay chain is discontinuous")
+            blocks.append(block)
+            previous_hash = block.hash
+        if expected_end_hash is not None and (not blocks or blocks[-1].hash != expected_end_hash):
+            raise RuntimeError("replay chain does not match observed canonical head")
+
+        for block in blocks:
             accepted = self.canonical.record_replayed_block(
                 CanonicalHead(block.number, block.hash, block.parent_hash)
             )
             if not accepted:
                 raise RuntimeError("replay block rejected by canonical coordinator")
             await handler(block)
-            previous_hash = block.hash
 
     async def run_heads_context(self, handler, poll_interval: float = 0.25) -> None:
         """Run heads while explicitly propagating canonical/replay decisions."""
