@@ -90,6 +90,13 @@ async def test_head_context_propagates_replay_decision():
         async def head_poll(self, _interval):
             yield BlockState(10, "h10", "h9", 0, None, 0)
             yield BlockState(11, "fork11", "wrong", 0, None, 0)
+        async def block_by_number(self, number):
+            return {
+                8: BlockState(8, "h8", "h7", 0, None, 0),
+                9: BlockState(9, "h9", "h8", 0, None, 0),
+                10: BlockState(10, "h10", "h9", 0, None, 0),
+                11: BlockState(11, "h11", "h10", 0, None, 0),
+            }[number]
 
     class FakeCanonical:
         def __init__(self):
