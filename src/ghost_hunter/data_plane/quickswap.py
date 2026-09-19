@@ -12,7 +12,7 @@ from .pool_events import (
     decode_quickswap_v2_pair_created,
 )
 from .protocols import VerifiedDeployment, verified_deployments
-from .rpc import MultiRPC
+from .rpc import MultiRPC, RPCError
 from .store import DiscoveryRecord, DiscoveryStore
 
 ZERO_ADDRESS = "0x" + "0" * 40
@@ -343,7 +343,7 @@ class QuickSwapAdapter:
                     self.cache.put_token(token0)
                     self.cache.put_token(token1)
                     processed += 1
-                except (KeyError, TypeError, ValueError, RuntimeError) as exc:
+                except (KeyError, TypeError, ValueError) as exc:
                     self.rejections.append({"pool_type": pool_type, "reason": str(exc), "block_number": block_number})
                     continue
         return processed
