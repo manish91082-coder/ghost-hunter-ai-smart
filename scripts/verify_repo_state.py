@@ -22,7 +22,7 @@ def api(path):
         with urllib.request.urlopen(req, timeout=25) as r:
             return json.load(r)
     except urllib.error.HTTPError as e:
-        raise RuntimeError(f"GitHub API {e.code}: {e.read().decode("utf-8", "replace")[:700]}") from e
+        raise RuntimeError(f"GitHub API {e.code}: {e.read().decode('utf-8', 'replace')[:700]}") from e
 
 def task_id(message):
     m = re.search(r"\bGH-TASK-\d{4}\b", message or "")

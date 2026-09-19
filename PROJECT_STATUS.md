@@ -376,3 +376,8 @@ Next:
 - It now reconciles main SHA, exact task identity, matching data-plane CI run, every job, artifacts, commit check-runs, commit statuses, PRs associated with the exact commit, all open PRs, all open issues, and recent main-branch workflow health.
 - Added hourly scheduled and manual inspection while retaining exact post-CI `workflow_run.completed` verification.
 - The inspector is fail-closed for the project GREEN gate and never mutates GitHub state.
+
+
+## 2026-09-19 — Verifier Static Audit Correction
+- Static post-commit audit found a Python quoting defect in the new state inspector before its promotion gate could be reached.
+- Corrected the GitHub API error-message f-string quoting. This correction is part of GH-TASK-0003; the defective commit is not treated as verified.
