@@ -250,17 +250,25 @@ class DiscoveryStore:
         if not row:
             return None
         number = int(row["number"])
-        current = number
-        child_parent = row["parent_hash"]
-        while current > 0:
-            previous = self._db.execute(
-                "SELECT hash,parent_hash FROM blocks WHERE number=? AND canonical=1",
-                (current - 1,),
-            ).fetchone()
-            if not previous or previous["hash"] != child_parent:
+        first = self._db.execute(
+            "SELECT number,hash FROM blocks WHERE canonical=1 ORDER BY number ASC LIMIT 1"
+        ).fetchone()
+        if first is None:
+            raise RuntimeError("durable canonical chain is inconsistent")
+        previous_hash = first["hash"]
+        previous_number = int(first["number"])
+        rows = self._db.execute(
+            "SELECT number,hash,parent_hash FROM blocks WHERE canonical=1 AND number>? ORDER BY number ASC",
+            (previous_number,),
+        ).fetchall()
+        for current in rows:
+            current_number = int(current["number"])
+            if current_number != previous_number + 1 or current["parent_hash"] != previous_hash:
                 raise RuntimeError("durable canonical chain is inconsistent")
-            child_parent = previous["parent_hash"]
-            current -= 1
+            previous_number = current_number
+            previous_hash = current["hash"]
+        if previous_number != number or previous_hash != row["hash"]:
+            raise RuntimeError("durable canonical chain is inconsistent")
         return number, row["hash"], row["parent_hash"]
 
     def get(self, candidate_key: str) -> DiscoveryRecord | None:
