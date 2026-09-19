@@ -18,11 +18,11 @@ class PolygonChain:
     async def chain_id(self) -> int:
         return int(await self.rpc.call("eth_chainId"), 16)
 
-    async def latest_block(self) -> BlockState:
-        raw = await self.rpc.call("eth_getBlockByNumber", ["latest", False])
+    @staticmethod
+    def _block_state(raw: dict) -> BlockState:
         if raw is None:
-            raise RuntimeError("latest block unavailable")
-        state = BlockState(
+            raise RuntimeError("block unavailable")
+        return BlockState(
             number=int(raw["number"], 16),
             hash=raw["hash"],
             parent_hash=raw["parentHash"],
@@ -30,7 +30,16 @@ class PolygonChain:
             base_fee=int(raw["baseFeePerGas"], 16) if raw.get("baseFeePerGas") else None,
             observed_at_ns=time.time_ns(),
         )
-        return state
+
+    async def block_by_number(self, number: int) -> BlockState:
+        if number < 0:
+            raise ValueError("block number must be non-negative")
+        raw = await self.rpc.call("eth_getBlockByNumber", [hex(number), False])
+        return self._block_state(raw)
+
+    async def latest_block(self) -> BlockState:
+        raw = await self.rpc.call("eth_getBlockByNumber", ["latest", False])
+        return self._block_state(raw)
 
     def commit_observation(self, state: BlockState) -> float | None:
         previous = self.previous
