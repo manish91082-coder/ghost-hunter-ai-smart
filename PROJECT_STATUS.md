@@ -498,3 +498,17 @@ Next:
 - Live execution remains disabled.
 - Next gate: governance synchronization before the next P1 engineering task.
 
+## 2026-09-20 — GH-TASK-0029 Governance Reconciliation: Complete Repository Restored
+- Exact current main baseline `39bd3fb2c168968ad4b696dfead33490ab8431d0` has been independently checked.
+- The repository tree contains 52 entries, matching the last known complete verified baseline in breadth.
+- A direct compare against baseline `5d192ed68f079d64efdbfab91060d52c3a8ffb75` now shows only three intended modified files: `PROJECT_STATUS.md`, `TASK_REGISTRY.json`, and `src/ghost_hunter/data_plane/rpc.py`.
+- The earlier incomplete-tree sequence is explicitly treated as superseded and is not used as feature verification evidence.
+- GH-TASK-0023 RPC hardening is treated as revalidated on the complete tree only.
+- GH-TASK-0027 is superseded; its incomplete restoration state is not authoritative.
+- GH-TASK-0028 is the complete-tree restoration checkpoint represented by the current verified tree.
+- Exact `data-plane-ci` #187 completed SUCCESS; test job and every workflow step completed successfully.
+- Exact `repo-state-verifier` #84 completed SUCCESS; inspect job and every workflow step completed successfully.
+- No strategy, economics, execution, or live-trading work has been introduced by this restoration/reconciliation sequence.
+- Live execution remains disabled.
+- Next implementation gate: continue P1 data-plane hardening only after this governance checkpoint reaches its own exact-SHA green gate.
+

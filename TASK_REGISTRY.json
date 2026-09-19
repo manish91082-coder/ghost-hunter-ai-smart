@@ -114,15 +114,39 @@
     },
     {
       "id": "GH-TASK-0023",
-      "title": "RPC error and quorum evidence hardening (revalidated on complete tree)",
-      "commit": "baa91951980dac22647862e80f1c46b66383af72",
+      "title": "RPC error and quorum evidence hardening (complete-tree revalidation)",
+      "commit": "39bd3fb2c168968ad4b696dfead33490ab8431d0",
       "state": "verified"
     },
     {
       "id": "GH-TASK-0025",
-      "title": "Restore complete repository tree and revalidate RPC hardening",
-      "commit": "baa91951980dac22647862e80f1c46b66383af72",
+      "title": "Complete-tree restoration and RPC revalidation checkpoint",
+      "commit": "39bd3fb2c168968ad4b696dfead33490ab8431d0",
       "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0026",
+      "title": "Governance reconciliation of verified complete-tree RPC baseline",
+      "commit": "e29a5d5f5509cc58c0b31e1ef1d47451bd777b29",
+      "state": "superseded_by_complete_tree_restore"
+    },
+    {
+      "id": "GH-TASK-0027",
+      "title": "Attempted source-tree restoration (superseded by complete-tree restore)",
+      "commit": "627d69a0789a8e90b35a66c3e13e163896976ca0",
+      "state": "superseded"
+    },
+    {
+      "id": "GH-TASK-0028",
+      "title": "Complete source-tree restoration from verified baseline",
+      "commit": "39bd3fb2c168968ad4b696dfead33490ab8431d0",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0029",
+      "title": "Governance reconciliation after complete-tree restoration",
+      "commit": "PENDING",
+      "state": "in_progress"
     }
   ]
 }
