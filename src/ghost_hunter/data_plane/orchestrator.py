@@ -133,7 +133,12 @@ class DataPlane:
                             replay_start=None,
                         )
                     )
-                await self.replay_range(replay_start, block.number, replay_handler)
+                await self.replay_range(
+                    replay_start,
+                    block.number,
+                    replay_handler,
+                    expected_end_hash=block.hash,
+                )
                 continue
             await self._process_canonical_block(block)
             await handler(HeadContext(block=block, accepted=True, replay_start=None))
