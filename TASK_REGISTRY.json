@@ -4,8 +4,29 @@
   "identity_source": "Immutable GH-TASK-NNNN token in commit message",
   "verification_rule": "A task is verified only when its exact implementation SHA is on main, the matching data-plane-ci run is terminal-success, all its jobs succeed, and no check run for that SHA is non-success.",
   "tasks": [
-    {"id":"GH-TASK-0001","title":"Durable canonical head recovery","commit":"f2cd22beb720cd5ff244df8a6e3d79199114a62a","state":"awaiting-verification"},
-    {"id":"GH-TASK-0002","title":"Automatic exact GitHub state verifier","commit":"a23729cfd10a4346f4973c820bff6a1c6b5f691a","state":"awaiting-verification"},
-    {"id":"GH-TASK-0003","title":"Repository-wide ground-truth state inspector","commit":"SELF","state":"pending"}
+    {
+      "id": "GH-TASK-0001",
+      "title": "Durable canonical head recovery",
+      "commit": "f2cd22beb720cd5ff244df8a6e3d79199114a62a",
+      "state": "awaiting-verification"
+    },
+    {
+      "id": "GH-TASK-0002",
+      "title": "Automatic exact GitHub state verifier",
+      "commit": "a23729cfd10a4346f4973c820bff6a1c6b5f691a",
+      "state": "awaiting-verification"
+    },
+    {
+      "id": "GH-TASK-0003",
+      "title": "Repository-wide ground-truth state inspector",
+      "commit": "SELF",
+      "state": "pending"
+    },
+    {
+      "id": "GH-TASK-0005",
+      "title": "Live head and reorg replay integration",
+      "commit": "8305fefd155e6189ffb3ce8a7d9ff7853a80f256",
+      "state": "verified"
+    }
   ]
 }
