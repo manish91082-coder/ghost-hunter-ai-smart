@@ -46,6 +46,10 @@ class CanonicalCoordinator:
     def __init__(self, store: DiscoveryStore, overlap: int = 12) -> None:
         self.store = store
         self.guard = ReorgGuard(overlap)
+        durable = self.store.latest_canonical_head()
+        if durable is not None:
+            number, block_hash, parent_hash = durable
+            self.guard.head = CanonicalHead(number, block_hash, parent_hash)
 
     def observe(self, head: CanonicalHead) -> tuple[bool, int | None]:
         if self.guard.accept(head):
