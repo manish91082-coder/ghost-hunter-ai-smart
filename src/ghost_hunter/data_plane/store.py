@@ -289,7 +289,7 @@ class DiscoveryStore:
         self._db.execute("""INSERT INTO token_snapshots(address,decimals,symbol,code_hash,block_number,block_hash,source,confidence,status)
             VALUES(?,?,?,?,?,?,?,?,'canonical')
             ON CONFLICT(address) DO UPDATE SET decimals=excluded.decimals,symbol=excluded.symbol,
-            code_hash=excluded.code_hash,block_number=excluded.block_number,source=excluded.source,
+            code_hash=excluded.code_hash,block_number=excluded.block_number,block_hash=excluded.block_hash,source=excluded.source,
             confidence=excluded.confidence,status='canonical'""",
             (state.address.lower(),state.decimals,state.symbol,state.code_hash,state.block_number,
              self.canonical_block_hash(state.block_number),state.source,state.confidence))
@@ -308,7 +308,7 @@ class DiscoveryStore:
         self._db.execute("""INSERT INTO pool_snapshots(address,venue,pool_type,token0,token1,block_number,block_hash,state_json,state_hash,source,confidence,status)
             VALUES(?,?,?,?,?,?,?,?,?,?,?,'canonical')
             ON CONFLICT(address) DO UPDATE SET venue=excluded.venue,pool_type=excluded.pool_type,
-            token0=excluded.token0,token1=excluded.token1,block_number=excluded.block_number,
+            token0=excluded.token0,token1=excluded.token1,block_number=excluded.block_number,block_hash=excluded.block_hash,
             state_json=excluded.state_json,state_hash=excluded.state_hash,source=excluded.source,
             confidence=excluded.confidence,status='canonical'""",
             (state.address.lower(),state.venue,state.pool_type,state.token0.lower(),
