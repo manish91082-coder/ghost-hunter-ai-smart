@@ -29,6 +29,11 @@ GLOBAL_STATE_SELECTOR = "0xe76c01e4"
 
 
 @dataclass(frozen=True)
+class DiscoveryPersistenceError(Exception):
+    """Durable evidence persistence failed and must abort the active replay."""
+
+
+@dataclass(frozen=True)
 class DiscoveryCandidate:
     created: PoolCreated
     block_number: int
@@ -331,7 +336,10 @@ class QuickSwapAdapter:
                         log_index=candidate.log_index,
                         payload_hash=store.payload_hash(payload),
                     )
-                    store.record_discovery_bundle(record, payload, pool_state, (token0, token1))
+                    try:
+                        store.record_discovery_bundle(record, payload, pool_state, (token0, token1))
+                    except Exception as exc:
+                        raise DiscoveryPersistenceError("durable discovery persistence failed") from exc
                     self.cache.put_pool(pool_state)
                     self.cache.put_token(token0)
                     self.cache.put_token(token1)
