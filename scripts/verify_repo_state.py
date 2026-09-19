@@ -42,7 +42,8 @@ def main():
     pulls_commit = api("/repos/" + REPO + "/commits/" + EXPECTED_SHA + "/pulls?per_page=100")
     pulls_open = api("/repos/" + REPO + "/pulls?state=open&per_page=100")
     issues_open = api("/repos/" + REPO + "/issues?state=open&per_page=100")
-    # Include workflow_run events so concurrent verifier run IDs are visible when excluding verifier self-checks.\n    runs = api("/repos/" + REPO + "/actions/runs?branch=main&per_page=100")
+    # Include workflow_run events so concurrent verifier run IDs are visible when excluding verifier self-checks.
+    runs = api("/repos/" + REPO + "/actions/runs?branch=main&per_page=100")
     target = None
     if RUN_ID:
         target = api("/repos/" + REPO + "/actions/runs/" + RUN_ID)
