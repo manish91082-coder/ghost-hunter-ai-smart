@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from ghost_hunter.data_plane.models import PoolState, TokenState
-from ghost_hunter.data_plane.store import DiscoveryStore
+from ghost_hunter.data_plane.store import DiscoveryRecord, DiscoveryStore
 
 
 def token(block=10, symbol="TOK"):
