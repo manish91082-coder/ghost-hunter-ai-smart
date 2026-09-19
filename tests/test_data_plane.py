@@ -105,6 +105,9 @@ async def test_head_context_propagates_replay_decision():
             self.calls += 1
             return (True, None) if self.calls == 1 else (False, 8)
 
+        def record_replayed_block(self, head):
+            return True
+
     plane = DataPlane.__new__(DataPlane)
     plane.chain = FakeChain()
     plane.canonical = FakeCanonical()
