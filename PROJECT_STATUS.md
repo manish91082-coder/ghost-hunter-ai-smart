@@ -392,3 +392,14 @@ Next:
 - Corrected self-check exclusion to use the current verifier run ID in check-run details, rather than relying on a workflow/check name.
 - Corrected workflow-run verification checkout to the exact tested SHA.
 - No GREEN promotion until corrected verifier and underlying CI are terminal-green.
+
+
+## GH-TASK-0003 verifier repair checkpoint
+- Verified main SHA: `88bd7e968958875e9982540bbd8691b54fdcb971`
+- data-plane-ci run #112: terminal SUCCESS (job `test` SUCCESS).
+- repo-state-verifier run #6: terminal SUCCESS (job `inspect` SUCCESS).
+- Exact verifier gate: all six gates TRUE, including `no_non_success_check_run=true`.
+- Machine-readable verifier artifact uploaded: `repo-state-35417084900`.
+- Root cause fixed: source CI run ID and current verifier run ID are now separate, so the verifier excludes only its own in-progress check run.
+- Workflow-run mode checks out the exact tested SHA.
+- Progression gate: GREEN for this checkpoint. Live trading remains independently OFF.
