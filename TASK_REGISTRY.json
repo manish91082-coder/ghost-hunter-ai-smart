@@ -88,5 +88,12 @@
       "commit": "b3e561f3b436891f2ed66e6a11330d18dc9e49c3",
       "state": "verified"
     }
+,
+    {
+      "id": "GH-TASK-0020",
+      "title": "Audit RPC failure boundaries and replay idempotence",
+      "commit": "7ba089d4c20d12b0bf0a6329f0f61270a302dd5a",
+      "state": "verified"
+    }
   ]
 }
