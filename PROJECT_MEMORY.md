@@ -371,3 +371,11 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - Root cause fixed: source CI run ID and current verifier run ID are now separate, so the verifier excludes only its own in-progress check run.
 - Workflow-run mode checks out the exact tested SHA.
 - Progression gate: GREEN for this checkpoint. Live trading remains independently OFF.
+
+
+## GH-TASK-0004 Durable Restart + Replay Control Plane
+- CanonicalCoordinator reconstructs its last canonical head from durable SQLite state on restart.
+- Exact block-number reads and a replay_range executor now provide a deterministic replacement-chain replay primitive with parent-hash continuity validation.
+- Verified checkpoint before this memory update: c87dd5903a76254098be03d0c5754407c677df49, data-plane-ci #117 SUCCESS, repo-state-verifier #11 SUCCESS, 48 pytest tests passed.
+- Status checkpoint was persisted separately at 6339d7cd46f10b8eb6162b7dad0affe29146cdc4 and passed data-plane-ci #118 plus repo-state-verifier #12.
+- Next: integrate replay directly into live head/reorg orchestration and add durable normalized pool/token snapshots for safe cache reconstruction.
