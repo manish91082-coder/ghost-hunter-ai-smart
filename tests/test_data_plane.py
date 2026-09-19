@@ -79,7 +79,7 @@ async def test_quorum_fails_when_only_one_provider_family_exists():
 
 
 @pytest.mark.asyncio
-async def test_head_context_propagates_replay_decision():
+async def test_head_context_replays_replacement_chain_on_discontinuity():
     from ghost_hunter.data_plane.models import BlockState
     from ghost_hunter.data_plane.orchestrator import DataPlane, HeadContext
 
@@ -117,6 +117,6 @@ async def test_head_context_propagates_replay_decision():
         seen.append(ctx)
 
     await plane.run_heads_context(handler, poll_interval=0)
-    assert isinstance(seen[0], HeadContext)
-    assert seen[0].accepted and seen[0].replay_start is None
-    assert not seen[1].accepted and seen[1].replay_start == 8
+    assert all(isinstance(item, HeadContext) for item in seen)
+    assert [item.block.number for item in seen] == [10, 8, 9, 10, 11]
+    assert all(item.accepted and item.replay_start is None for item in seen)
