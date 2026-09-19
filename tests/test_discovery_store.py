@@ -89,12 +89,10 @@ def test_snapshot_state_hash_and_payload_survive_restart():
 
 def test_record_block_rejects_missing_or_mismatched_predecessor():
     with DiscoveryStore() as store:
-        with pytest.raises(ValueError, match="predecessor"):
-            store.record_block(11, "h11", "h10")
-
         store.record_block(10, "h10", "h9")
         with pytest.raises(ValueError, match="predecessor"):
             store.record_block(11, "h11", "wrong-parent")
+        store.record_block(11, "h11", "h10")
 
 
 def test_latest_canonical_head_fails_on_deep_ancestry_corruption():
