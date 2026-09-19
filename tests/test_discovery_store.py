@@ -147,3 +147,52 @@ def test_reorg_restart_reconstructs_only_replacement_fork_state():
                 new_pool
             ]
             assert reopened.latest_canonical_head() == (11, "new11", "new10")
+
+
+def test_restart_reconstructs_discoveries_only_from_current_canonical_fork():
+    with tempfile.TemporaryDirectory() as d:
+        path = Path(d) / "discovery-reorg-restart.sqlite"
+
+        with DiscoveryStore(path) as store:
+            store.record_block(20, "h20", "h19")
+            old_payload = {"pool": "0xoldpool", "fork": "old"}
+            old = DiscoveryRecord(
+                candidate_key="old-candidate",
+                venue="quickswap",
+                pool_type="v2",
+                pool_address="0xoldpool",
+                block_number=20,
+                block_hash="h20",
+                transaction_hash="0xtxold",
+                log_index=1,
+                payload_hash=store.payload_hash(old_payload),
+            )
+            assert store.record_discovery(old, old_payload)
+
+            store.rewind_from(20)
+            store.record_block(20, "new20", "h19")
+            new_payload = {"pool": "0xnewpool", "fork": "new"}
+            new = DiscoveryRecord(
+                candidate_key="new-candidate",
+                venue="quickswap",
+                pool_type="v2",
+                pool_address="0xnewpool",
+                block_number=20,
+                block_hash="new20",
+                transaction_hash="0xtxnew",
+                log_index=1,
+                payload_hash=store.payload_hash(new_payload),
+            )
+            assert store.record_discovery(new, new_payload)
+
+            # Simulate stale/corrupt status only. Hash anchoring must still
+            # prevent the old fork from being reconstructed as canonical.
+            store._db.execute(
+                "UPDATE discoveries SET status='canonical' WHERE candidate_key=?",
+                (old.candidate_key,),
+            )
+            store._db.commit()
+
+        with DiscoveryStore(path) as reopened:
+            assert reopened.canonical_records() == [new]
+            assert reopened.orphaned_records() == [old]

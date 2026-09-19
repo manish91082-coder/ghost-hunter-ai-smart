@@ -385,12 +385,18 @@ class DiscoveryStore:
         return DiscoveryRecord(**dict(row)) if row else None
 
     def canonical_records(self) -> list[DiscoveryRecord]:
+        """Return only discoveries anchored to the current canonical fork."""
         rows = self._db.execute(
             """
-            SELECT candidate_key,venue,pool_type,pool_address,block_number,
-                   block_hash,transaction_hash,log_index,payload_hash,status
-            FROM discoveries WHERE status='canonical'
-            ORDER BY block_number,candidate_key
+            SELECT d.candidate_key,d.venue,d.pool_type,d.pool_address,d.block_number,
+                   d.block_hash,d.transaction_hash,d.log_index,d.payload_hash,d.status
+            FROM discoveries d
+            JOIN blocks b
+              ON b.number=d.block_number
+             AND b.canonical=1
+             AND b.hash=d.block_hash
+            WHERE d.status='canonical'
+            ORDER BY d.block_number,d.candidate_key
             """
         ).fetchall()
         return [DiscoveryRecord(**dict(row)) for row in rows]
