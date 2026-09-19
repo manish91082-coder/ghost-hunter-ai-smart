@@ -178,6 +178,92 @@ class DiscoveryStore:
         self._db.commit()
         return True
 
+    def record_discovery_bundle(
+        self,
+        record: DiscoveryRecord,
+        payload: Any,
+        pool_state: PoolState,
+        token_states: tuple[TokenState, TokenState],
+    ) -> bool:
+        """Atomically persist verified discovery evidence and canonical snapshots."""
+        if pool_state.block_number != record.block_number or any(
+            token.block_number != record.block_number for token in token_states
+        ):
+            raise ValueError("discovery bundle block mismatch")
+        if not record.block_hash or record.status != "canonical":
+            raise ValueError("discovery bundle requires canonical block hash")
+        block = self._db.execute(
+            "SELECT hash FROM blocks WHERE number=? AND canonical=1", (record.block_number,)
+        ).fetchone()
+        if not block or block["hash"] != record.block_hash:
+            raise ValueError("discovery bundle is not anchored to a canonical block")
+        computed = self.payload_hash(payload)
+        if computed != record.payload_hash:
+            raise ValueError("payload hash mismatch")
+        existing = self._db.execute(
+            "SELECT payload_hash,status FROM discoveries WHERE candidate_key=?", (record.candidate_key,)
+        ).fetchone()
+        if existing and (existing["payload_hash"] != computed or existing["status"] != "canonical"):
+            raise ValueError("candidate replay payload mismatch")
+        try:
+            self._db.execute("BEGIN")
+            if not existing:
+                self._db.execute(
+                    """INSERT INTO discoveries(
+                      candidate_key,venue,pool_type,pool_address,block_number,block_hash,
+                      transaction_hash,log_index,payload_hash,payload_json,status
+                    ) VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+                    (
+                        record.candidate_key, record.venue, record.pool_type, record.pool_address.lower(),
+                        record.block_number, record.block_hash, record.transaction_hash, record.log_index,
+                        record.payload_hash, json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str),
+                        "canonical",
+                    ),
+                )
+            for token in token_states:
+                self._record_token_snapshot_uncommitted(token)
+            self._record_pool_snapshot_uncommitted(pool_state)
+            self._db.commit()
+        except Exception:
+            self._db.rollback()
+            raise
+        return not bool(existing)
+
+    def _record_token_snapshot_uncommitted(self, state: TokenState) -> bool:
+        existing = self._db.execute(
+            "SELECT block_number FROM token_snapshots WHERE address=?", (state.address.lower(),)
+        ).fetchone()
+        if existing and int(existing["block_number"]) > state.block_number:
+            return False
+        self._db.execute("""INSERT INTO token_snapshots(address,decimals,symbol,code_hash,block_number,source,confidence,status)
+            VALUES(?,?,?,?,?,?,?,'canonical')
+            ON CONFLICT(address) DO UPDATE SET decimals=excluded.decimals,symbol=excluded.symbol,
+            code_hash=excluded.code_hash,block_number=excluded.block_number,source=excluded.source,
+            confidence=excluded.confidence,status='canonical'""",
+            (state.address.lower(), state.decimals, state.symbol, state.code_hash,
+             state.block_number, state.source, state.confidence),
+        )
+        return True
+
+    def _record_pool_snapshot_uncommitted(self, state: PoolState) -> bool:
+        existing = self._db.execute(
+            "SELECT block_number FROM pool_snapshots WHERE address=?", (state.address.lower(),)
+        ).fetchone()
+        if existing and int(existing["block_number"]) > state.block_number:
+            return False
+        payload = json.dumps(dict(state.state), sort_keys=True, separators=(",", ":"), default=str)
+        self._db.execute("""INSERT INTO pool_snapshots(address,venue,pool_type,token0,token1,block_number,state_json,state_hash,source,confidence,status)
+            VALUES(?,?,?,?,?,?,?,?,?,?,'canonical')
+            ON CONFLICT(address) DO UPDATE SET venue=excluded.venue,pool_type=excluded.pool_type,
+            token0=excluded.token0,token1=excluded.token1,block_number=excluded.block_number,
+            state_json=excluded.state_json,state_hash=excluded.state_hash,source=excluded.source,
+            confidence=excluded.confidence,status='canonical'""",
+            (state.address.lower(), state.venue, state.pool_type, state.token0.lower(),
+             state.token1.lower() if state.token1 else None, state.block_number, payload,
+             state.state_hash, state.source, state.confidence),
+        )
+        return True
+
     def record_token_snapshot(self, state: TokenState) -> bool:
         if state.block_number < 0:
             raise ValueError("token snapshot requires a valid block number")
