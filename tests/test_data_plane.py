@@ -431,3 +431,187 @@ async def test_reorg_replay_runs_real_quickswap_persistence_path(tmp_path):
     assert store.canonical_records()
     assert all(record.block_hash == "new8" for record in store.canonical_records())
     assert any(record.block_hash == "old8" for record in store.orphaned_records())
+
+
+@pytest.mark.asyncio
+async def test_deep_reorg_replaces_orphaned_lower_height_snapshots_and_restart_restores(tmp_path):
+    """A deep reorg must allow a lower-height replacement to replace orphaned state."""
+    from ghost_hunter.data_plane.store import DiscoveryStore
+
+    db_path = tmp_path / "snapshot-reorg.sqlite"
+    store = DiscoveryStore(db_path)
+    for number, block_hash, parent_hash in [
+        (7, "h7", "h6"),
+        (8, "old8", "h7"),
+        (9, "old9", "old8"),
+        (10, "old10", "old9"),
+    ]:
+        store.record_block(number, block_hash, parent_hash)
+
+    pool_address = "0x" + "4" * 40
+    token0 = "0x" + "2" * 40
+    token1 = "0x" + "3" * 40
+    old_pool = PoolState(
+        pool_address, "quickswap", "v2", token0, token1, 10,
+        {"reserve0": 100, "reserve1": 200}, "old-pool", "test", 1.0,
+    )
+    old_token0 = TokenState(token0, 18, "OLD0", "old-code0", 10, "test", 1.0)
+    old_token1 = TokenState(token1, 18, "OLD1", "old-code1", 10, "test", 1.0)
+    assert store.record_pool_snapshot(old_pool) is True
+    assert store.record_token_snapshot(old_token0) is True
+    assert store.record_token_snapshot(old_token1) is True
+
+    store.rewind_from(8)
+    assert store.canonical_pool_snapshots() == []
+    assert store.canonical_token_snapshots() == []
+
+    for number, block_hash, parent_hash in [
+        (8, "new8", "h7"),
+        (9, "new9", "new8"),
+        (10, "new10", "new9"),
+        (11, "new11", "new10"),
+    ]:
+        store.record_block(number, block_hash, parent_hash)
+
+    new_pool = PoolState(
+        pool_address, "quickswap", "v2", token0, token1, 8,
+        {"reserve0": 10, "reserve1": 20}, "new-pool", "test", 1.0,
+    )
+    new_token0 = TokenState(token0, 18, "NEW0", "new-code0", 8, "test", 1.0)
+    new_token1 = TokenState(token1, 18, "NEW1", "new-code1", 8, "test", 1.0)
+    assert store.record_pool_snapshot(new_pool) is True
+    assert store.record_token_snapshot(new_token0) is True
+    assert store.record_token_snapshot(new_token1) is True
+
+    pools = store.canonical_pool_snapshots()
+    tokens = store.canonical_token_snapshots()
+    assert [(p.address, p.block_number, p.state_hash) for p in pools] == [
+        (pool_address, 8, "new-pool")
+    ]
+    assert {(t.address, t.block_number, t.code_hash) for t in tokens} == {
+        (token0, 8, "new-code0"),
+        (token1, 8, "new-code1"),
+    }
+
+    restarted = DiscoveryStore(db_path)
+    cache = StateCache()
+    cache.restore(restarted.canonical_token_snapshots(), restarted.canonical_pool_snapshots())
+
+    assert restarted.latest_canonical_head() == (11, "new11", "new10")
+    assert cache.pools[pool_address].block_number == 8
+    assert cache.pools[pool_address].state_hash == "new-pool"
+    assert cache.tokens[token0].block_number == 8
+    assert cache.tokens[token0].code_hash == "new-code0"
+    assert cache.tokens[token1].block_number == 8
+    assert cache.tokens[token1].code_hash == "new-code1"
+
+
+@pytest.mark.asyncio
+async def test_quickswap_persistence_failure_aborts_deep_reorg_replay(tmp_path):
+    """Durable evidence failure must roll back the whole replay, not be downgraded to a rejection."""
+    from ghost_hunter.data_plane.models import BlockState, PoolState, TokenState
+    from ghost_hunter.data_plane.orchestrator import DataPlane
+    from ghost_hunter.data_plane.pool_events import PoolCreated
+    from ghost_hunter.data_plane.quickswap import (
+        DiscoveryCandidate,
+        DiscoveryPersistenceError,
+        QuickSwapAdapter,
+    )
+    from ghost_hunter.data_plane.reorg import CanonicalCoordinator
+    from ghost_hunter.data_plane.store import DiscoveryStore
+
+    class FailingStore(DiscoveryStore):
+        def record_discovery_bundle(self, *args, **kwargs):
+            raise RuntimeError("simulated durable write failure")
+
+    store = FailingStore(tmp_path / "persistence-failure.sqlite")
+    for number, block_hash, parent_hash in [
+        (7, "h7", "h6"),
+        (8, "old8", "h7"),
+        (9, "old9", "old8"),
+        (10, "old10", "old9"),
+    ]:
+        store.record_block(number, block_hash, parent_hash)
+
+    class FakeChain:
+        async def chain_id(self):
+            return 137
+
+        async def head_poll(self, _interval):
+            yield BlockState(11, "new11", "new10", 0, None, 0)
+
+        async def block_by_number(self, number):
+            return {
+                8: BlockState(8, "new8", "h7", 0, None, 0),
+                9: BlockState(9, "new9", "new8", 0, None, 0),
+                10: BlockState(10, "new10", "new9", 0, None, 0),
+                11: BlockState(11, "new11", "new10", 0, None, 0),
+            }[number]
+
+    class FakeScanner:
+        async def scan(self, query):
+            if query.from_block == 8:
+                return [{
+                    "blockHash": "new8",
+                    "transactionHash": "newtx",
+                    "logIndex": "0x0",
+                }]
+            return []
+
+    adapter = QuickSwapAdapter.__new__(QuickSwapAdapter)
+    adapter.cache = StateCache()
+    adapter.rejections = []
+    adapter.deployments = []
+    adapter._by_key = {}
+    adapter.rpc = None
+
+    candidate = DiscoveryCandidate(
+        PoolCreated(
+            "quickswap", "v2", "0x" + "1" * 40,
+            "0x" + "2" * 40, "0x" + "3" * 40, "0x" + "5" * 40, 2
+        ),
+        8, "newtx", "new8", 0,
+    )
+    adapter.log_query = lambda pool_type, start, end: {
+        "address": "0x" + "1" * 40,
+        "topics": ["0xtopic"],
+        "fromBlock": hex(start),
+        "toBlock": hex(end),
+    }
+    adapter.decode_log = lambda pool_type, log: candidate
+
+    async def reconcile(_candidate):
+        return _candidate.created
+
+    async def pool_state(_candidate, *, promote_cache=True):
+        return PoolState(
+            "0x" + "5" * 40, "quickswap", "v2",
+            "0x" + "2" * 40, "0x" + "3" * 40, 8,
+            {"reserve0": 10, "reserve1": 20}, "new-pool", "test", 1.0,
+        )
+
+    async def token_state(address, block_number, *, promote_cache=True):
+        return TokenState(
+            address.lower(), 18,
+            "T0" if address.endswith("2" * 40) else "T1",
+            "new-code", block_number, "test", 1.0,
+        )
+
+    adapter.reconcile_candidate = reconcile
+    adapter.read_pool_state = pool_state
+    adapter._token_state = token_state
+
+    coordinator = CanonicalCoordinator(store, overlap=3)
+    plane = DataPlane(
+        rpc=None, chain=FakeChain(), cache=adapter.cache,
+        discovery=None, store=store, canonical=coordinator,
+        scanner=FakeScanner(), quickswap=adapter,
+    )
+
+    with pytest.raises(DiscoveryPersistenceError):
+        await plane.run_heads(lambda _block: None, poll_interval=0)
+
+    assert store.latest_canonical_head() == (7, "h7", "h6")
+    assert store.canonical_records() == []
+    assert adapter.cache.pools == {}
+    assert adapter.cache.tokens == {}
