@@ -117,7 +117,7 @@ class DiscoveryStore:
                 "SELECT hash FROM blocks WHERE number=? AND canonical=1",
                 (number - 1,),
             ).fetchone()
-            if previous is None or previous["hash"] != parent_hash:
+            if previous is not None and previous["hash"] != parent_hash:
                 raise ValueError("canonical block parent does not match durable predecessor")
         self._db.execute(
             """
