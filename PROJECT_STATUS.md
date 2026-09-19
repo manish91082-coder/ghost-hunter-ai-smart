@@ -449,3 +449,23 @@ Next:
 - The remaining governance drift is `PROJECT_STATUS.md`: its historical narrative stops at GH-TASK-0006 and its old “Next” text no longer reflects the verified GH-TASK-0007 through GH-TASK-0014 sequence.
 - Next gate: synchronize `PROJECT_STATUS.md` with the verified task history and current P1 state before introducing another data-plane feature.
 - Live execution remains disabled.
+
+
+## 2026-09-19 — GH-TASK-0015 → GH-TASK-0018 Verified P1 Reorg/Evidence Hardening
+- GH-TASK-0015 synchronized the project-status narrative with the verified task history through GH-TASK-0014.
+- GH-TASK-0016 added an end-to-end canonical discontinuity -> replacement-chain replay regression using the real coordinator/store path.
+- GH-TASK-0017 exercised the real QuickSwap persistence/evidence path during replacement replay, including canonical block-hash binding and orphaned old-fork evidence.
+- GH-TASK-0018 closed the deeper snapshot-integrity hole: orphaned higher-height pool/token snapshots can no longer block a lower-height canonical replacement after a deep reorg.
+- GH-TASK-0018 also made durable QuickSwap evidence-persistence failures replay-fatal, preserving failure-atomic canonical rollback instead of silently converting persistence failures into candidate rejections.
+- Final GH-TASK-0018 implementation SHA: `b3e561f3b436891f2ed66e6a11330d18dc9e49c3`.
+- Exact `data-plane-ci` run #178 completed SUCCESS with all jobs successful.
+- Exact `repo-state-verifier` run #75 completed SUCCESS and checked out the exact promoted SHA; its machine-readable gate reported all gate conditions true at verification time.
+- A duplicate verifier run #74 raced with the subsequent GH-TASK-0018 corrective commit sequence and failed because it checked an intermediate expected SHA after `main` had already advanced. It did not identify a code/test failure. A clean governance checkpoint is therefore used to establish a fresh exact-SHA verification baseline.
+- Live execution remains disabled; these changes only harden canonical data integrity, replay, evidence persistence and restart reconstruction.
+
+## 2026-09-19 — GH-TASK-0019 Governance Reconciliation Checkpoint
+- Synchronized `TASK_REGISTRY.json` with verified GH-TASK-0015 through GH-TASK-0018.
+- Recorded the final implementation SHA for each task rather than intermediate failed/corrective commits.
+- Synchronized `PROJECT_STATUS.md` with the actual P1 reorg/replay/evidence hardening state.
+- This commit intentionally contains no trading, strategy, economics or live-execution feature work.
+- Next gate after clean exact-SHA verification: continue P1 data-plane audit only after the fresh governance checkpoint is terminal-green.

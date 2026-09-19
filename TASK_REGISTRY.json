@@ -63,6 +63,30 @@
       "title": "Synchronize verified task registry",
       "commit": "6e657d84506b7aa6a86b2bf68ae69a38ee898cfd",
       "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0015",
+      "title": "Synchronize PROJECT_STATUS with verified history",
+      "commit": "62ff605b7e9f4a92bf42d4c05e2a97f72810f958",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0016",
+      "title": "End-to-end canonical reorg replay regression",
+      "commit": "8fbf958ce34f65de637cddb7b5154f226e47796a",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0017",
+      "title": "Exercise QuickSwap persistence during reorg replay",
+      "commit": "78cc445e7ecd8e8457f8e8dd7fbc9a0f78402067",
+      "state": "verified"
+    },
+    {
+      "id": "GH-TASK-0018",
+      "title": "Reorg-safe snapshot replacement and persistence failure atomicity",
+      "commit": "b3e561f3b436891f2ed66e6a11330d18dc9e49c3",
+      "state": "verified"
     }
   ]
 }
