@@ -30,10 +30,17 @@ def test_ordered_allows_unrestricted_provider_for_capability():
     assert [p.name for p in rpc._ordered("trace")] == ["generic", "trace"]
 
 
-def test_quorum_value_comparison_is_key_order_independent():
+@pytest.mark.asyncio
+async def test_quorum_call_accepts_equivalent_mapping_results(monkeypatch):
     first = RPCProvider("first", "https://first.example")
     second = RPCProvider("second", "https://second.example")
     rpc = MultiRPC([first, second])
-    left = {"b": 2, "a": 1}
-    right = {"a": 1, "b": 2}
-    assert json.dumps(left, sort_keys=True, separators=(",", ":")) == json.dumps(right, sort_keys=True, separators=(",", ":"))
+
+    async def fake_post(provider, payload):
+        if provider is first:
+            return {"jsonrpc": "2.0", "id": 1, "result": {"b": 2, "a": 1}}
+        return {"jsonrpc": "2.0", "id": 2, "result": {"a": 1, "b": 2}}
+
+    monkeypatch.setattr(rpc, "_post", fake_post)
+    result = await rpc.quorum_call("eth_call", quorum=2)
+    assert result == {"b": 2, "a": 1}
