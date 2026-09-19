@@ -339,3 +339,10 @@ Reason: Autonomous many-RPC/many-WSS fleet policy frozen. Unhealthy endpoints ar
 - Added exact-state GitHub Actions verification after `data-plane-ci` completion, with machine-readable `repo-state.json` and fail-closed gates.
 - Added `TASK_REGISTRY.json` and `GH-TASK-NNNN` task identity.
 - This infrastructure enforces the frozen verification gate and is not live-execution authorization.
+
+
+## 2026-09-19 Ground-Truth State Inspector Sync
+- Upgraded the GitHub verifier into a repository-wide state inspector covering exact SHA, Actions, jobs, artifacts, check-runs, statuses, PRs, issues and recent workflow health.
+- Added hourly scheduled inspection and manual dispatch while retaining exact post-CI workflow verification.
+- Task identity is derived from the immutable `GH-TASK-NNNN` commit-message token, avoiding recursive status commits.
+- The inspector is read-only and fail-closed and is now the machine ground-truth layer for deciding whether the next implementation step may begin.

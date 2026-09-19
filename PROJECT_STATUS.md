@@ -369,3 +369,10 @@ Next:
 - Added `TASK_REGISTRY.json` and the `GH-TASK-NNNN` commit-message convention for durable task identity.
 - This governance infrastructure enforces the frozen GitHub verification gate and does not authorize live trading.
 - `f2cd22beb720cd5ff244df8a6e3d79199114a62a` remains awaiting exact Actions verification because the connector's commit-run wrapper does not expose push-triggered runs.
+
+
+## 2026-09-19 — Repository-Wide Ground-Truth Inspector
+- Upgraded `scripts/verify_repo_state.py` from a single-run checker into a repository-wide read-only state inspector.
+- It now reconciles main SHA, exact task identity, matching data-plane CI run, every job, artifacts, commit check-runs, commit statuses, PRs associated with the exact commit, all open PRs, all open issues, and recent main-branch workflow health.
+- Added hourly scheduled and manual inspection while retaining exact post-CI `workflow_run.completed` verification.
+- The inspector is fail-closed for the project GREEN gate and never mutates GitHub state.
